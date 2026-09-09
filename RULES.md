@@ -48,7 +48,7 @@ These are enough to produce all four outputs. If some are unknown, the app does 
 - Annual ITR income appears for self-employed borrowers.
 - Collateral appears for business/self-employed borrowers or when LAP is selected.
 - Recent bounce and high-cost debt are asked because they can change the decision and rate.
-- Tenure changes EMI, APR and the principal supported by a monthly ceiling.
+- Tenure changes EMI, APR and the principal supported by a monthly ceiling, and the result shows a short numerical tenure trade-off.
 
 This keeps the form shorter for a salaried borrower and adds fields when the profile needs them.
 
@@ -137,6 +137,8 @@ The requested tenure is first limited to 12–84 months.
 If age is known, the app also limits tenure so that the repayment does not go beyond the prototype's 60-year age limit.
 
 For example, at age 58 a requested 48-month tenure becomes 24 months.
+
+For O4, the result shows three nearby terms where possible: 36 months, the selected term, and 60 months. Each row shows the EMI and total interest on the borrower-safe amount at the rate midpoint. This makes the trade-off explicit: shorter tenure raises EMI and reduces total interest; longer tenure lowers EMI and increases total interest.
 
 This is a prototype assumption, not a universal lender policy.
 
@@ -273,7 +275,7 @@ It then annualizes:
 
 `APR = ((1+r)^12 - 1) × 100`
 
-Bisection is used for the small numerical solve. The app does not simply add the fee percentage to the interest rate.
+Bisection is used for the small numerical solve. The app does not simply add the fee percentage to the interest rate. If borrower-safe principal is zero, APR and fee are shown as zero rather than inventing a rate for a zero-size loan.
 
 ## 14. Confidence
 
