@@ -66,6 +66,10 @@ The base two-wheeler band is 11%–19%. Unknown credit, variable income, the rec
 
 - Base safe EMI ceiling: **₹9,910/month**
 - Tenure used: **36 months**
+- Tenure trade-off on the safe amount at the 22.5% midpoint:
+  - 24 months: about **₹13.4k EMI**, about **₹64.7k total interest**
+  - 36 months: about **₹9.9k EMI**, about **₹99.0k total interest** — selected
+  - 48 months: about **₹8.2k EMI**, about **₹1.35L total interest**
 - Stress income after a 15% drop: **₹23,290/month**
 - Stressed safe EMI room: **₹8,266/month**
 - Requested ₹1.5L EMI at the stressed rate of 30%: **about ₹6,368/month**
