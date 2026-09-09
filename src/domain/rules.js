@@ -76,16 +76,7 @@ function affordability(profile, income, otherHouseholdIncome = 0) {
   const safeAvailable = expensesComplete
     ? Math.max(0, safeTotal - existingEmi - monthlyExpenses)
     : Math.max(0, safeTotal - existingEmi)
-  return {
-    existingEmi,
-    lenderTotal,
-    safeTotal,
-    lenderAvailable,
-    safeAvailable,
-    monthlyExpenses,
-    householdIncome,
-    otherHouseholdIncome: Math.max(0, safeNumber(otherHouseholdIncome)),
-  }
+  return { existingEmi, lenderTotal, safeTotal, lenderAvailable, safeAvailable, monthlyExpenses, householdIncome, otherHouseholdIncome: Math.max(0, safeNumber(otherHouseholdIncome)) }
 }
 
 function productRoute(profile) {
@@ -146,14 +137,17 @@ function confidence(profile, normalized) {
 
 function buildTenureTradeoff(principal, annualRate, tenure, maximumTenure) {
   const max = Math.min(RULES.maxTenureMonths, maximumTenure)
-  const preferred = [36, 48, 60]
+  const pool = [...new Set([12, 24, 36, 48, 60, 72, 84, tenure])]
     .map((months) => clamp(months, RULES.minTenureMonths, max))
     .filter((months, index, values) => values.indexOf(months) === index)
-  if (!preferred.includes(tenure)) {
-    preferred.push(clamp(tenure, RULES.minTenureMonths, max))
-  }
-  const candidates = preferred.sort((a, b) => a - b).slice(-3)
-  if (!candidates.includes(tenure)) candidates[0] = tenure
+    .sort((a, b) => a - b)
+  const lower = pool.filter((months) => months < tenure).sort((a, b) => b - a)
+  const higher = pool.filter((months) => months > tenure).sort((a, b) => a - b)
+  let candidates = [tenure]
+  if (higher.length && lower.length) candidates = [lower[0], tenure, higher[0]]
+  else if (lower.length >= 2) candidates = [lower[1], lower[0], tenure]
+  else if (higher.length >= 2) candidates = [tenure, higher[0], higher[1]]
+  else candidates = [...lower.slice(0, 2), tenure, ...higher.slice(0, 2)].slice(0, 3)
   return [...new Set(candidates)].sort((a, b) => a - b).map((months) => {
     const emi = calculateEmi(principal, annualRate, months)
     return { months, emi, totalInterest: Math.max(0, emi * months - principal), isSelected: months === tenure }
