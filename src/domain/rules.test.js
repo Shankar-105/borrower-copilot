@@ -52,6 +52,21 @@ describe('Borrower Copilot domain rules', () => {
     expect(result.tenure).toBe(24)
   })
 
+  it('shows a real tenure tradeoff around the selected term', () => {
+    const result = evaluateBorrower(SAMPLE_BORROWERS.Priya)
+    expect(result.tenureTradeoff.length).toBe(3)
+    expect(result.tenureTradeoff.find((option) => option.months === 36).emi).toBeGreaterThan(result.tenureTradeoff.find((option) => option.months === 48).emi)
+    expect(result.tenureTradeoff.find((option) => option.months === 60).emi).toBeLessThan(result.tenureTradeoff.find((option) => option.months === 48).emi)
+    expect(result.tenureTradeoff.find((option) => option.months === 60).totalInterest).toBeGreaterThan(result.tenureTradeoff.find((option) => option.months === 48).totalInterest)
+  })
+
+  it('does not invent an APR when safe capacity is zero', () => {
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, existingEmi: 60000, expensesKnown: true, monthlyExpenses: 60000 })
+    expect(result.safeAmount).toBe(0)
+    expect(result.apr.min).toBe(0)
+    expect(result.apr.max).toBe(0)
+  })
+
   it('never emits invalid values for missing income', () => {
     const result = evaluateBorrower({ incomeType: 'variable', requestedAmount: 100000, tenureMonths: 48 })
     const values = [result.safeAmount, result.lenderAmount, result.recommendedEmi, result.apr.min, result.apr.max]
