@@ -3,8 +3,13 @@ import { createRoot } from 'react-dom/client'
 import { evaluateBorrower, formatInr, formatLakhs, formatPercent, QUESTION_DEFINITIONS, RULES, SAMPLE_BORROWERS } from './domain/rules'
 import './styles.css'
 
-const blank = { name: '', age: 0, city: '', purpose: 'wedding', loanType: 'not-sure', requestedAmount: 500000, incomeType: 'salaried', monthlyIncome: 60000, incomeLow: 40000, incomeHigh: 60000, documentedAnnualIncome: 0, existingEmi: 0, monthlyExpenses: 0, creditScore: null, collateralValue: 0, expensesKnown: false, recentBounce: false, highCostDebt: false, tenureMonths: 48 }
-const asValue = (key, value) => ['expensesKnown', 'recentBounce', 'highCostDebt'].includes(key) ? value === 'true' : ['creditScore', 'collateralValue', 'requestedAmount', 'monthlyIncome', 'incomeLow', 'incomeHigh', 'documentedAnnualIncome', 'existingEmi', 'monthlyExpenses', 'tenureMonths', 'age'].includes(key) ? (value === '' ? 0 : Number(value)) : value
+const blank = { name: '', age: 0, city: '', purpose: 'wedding', loanType: 'not-sure', requestedAmount: 500000, incomeType: 'salaried', monthlyIncome: 60000, incomeLow: 40000, incomeHigh: 60000, documentedAnnualIncome: 0, existingEmi: 0, monthlyExpenses: null, creditScore: null, collateralValue: 0, expensesKnown: false, recentBounce: false, highCostDebt: false, tenureMonths: 48 }
+const asValue = (key, value) => {
+  if (['expensesKnown', 'recentBounce', 'highCostDebt'].includes(key)) return value === 'true'
+  if (key === 'creditScore' || key === 'monthlyExpenses') return value === '' ? null : Number(value)
+  if (['collateralValue', 'requestedAmount', 'monthlyIncome', 'incomeLow', 'incomeHigh', 'documentedAnnualIncome', 'existingEmi', 'tenureMonths', 'age'].includes(key)) return value === '' ? 0 : Number(value)
+  return value
+}
 
 function App() {
   const [profile, setProfile] = useState(blank)
@@ -37,7 +42,7 @@ function Result({ profile, result, onBack, onReset }) {
 }
 
 function Metric({ label, value, detail, emphasis }) { return <div className={`metric ${emphasis ? 'emphasis' : ''}`}><span>{label}</span><strong>{value}</strong><small>{detail}</small></div> }
-function NegotiationCard({ profile, result, quote, setQuote }) {
+function NegotiationCard({ result, quote, setQuote }) {
   const quoteNumber = Number(quote)
   const quoteMessage = quoteNumber > result.rate.max ? `Ask why ${quote}% is above your illustrative benchmark.` : quoteNumber < result.rate.min ? `This is below your illustrative benchmark. Check the full quote and fees before comparing.` : `This quote is within your illustrative benchmark. Compare the APR and fees too.`
   return <aside className="negotiation-card"><div className="card-top"><span className="brand-mark small">B</span><span>Negotiation Card</span><span className="card-date">LOCAL / PRIVATE</span></div><h2>What I should carry into the lender conversation.</h2><div className="card-hero"><span>Recommended amount</span><strong>{formatLakhs(result.safeAmount)}</strong><small>{result.decisionReason}</small></div><div className="card-rows"><div><span>Fair rate</span><b>{formatPercent(result.rate.min)}–{formatPercent(result.rate.max)}</b></div><div><span>APR incl. fee</span><b>{formatPercent(result.apr.min)}–{formatPercent(result.apr.max)}</b></div><div><span>EMI ceiling</span><b>{formatInr(result.recommendedEmi)}</b></div><div><span>Route</span><b>{result.route.product}</b></div></div><div className="quote-check"><label>Compare a lender quote<input value={quote} onChange={(event) => setQuote(event.target.value)} placeholder="e.g. 14" type="number" min="0" step="0.1" /><span>%</span></label>{quote && <p className={quoteNumber > result.rate.max ? 'quote-high' : quoteNumber < result.rate.min ? 'quote-low' : 'quote-ok'}>{quoteMessage}</p>}</div><div className="card-foot">Illustrative self-assessment only. Actual underwriting, pricing and fees vary by lender.</div></aside>
