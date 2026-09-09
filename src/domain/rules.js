@@ -71,12 +71,21 @@ function affordability(profile, income, otherHouseholdIncome = 0) {
   const lenderAvailable = Math.max(0, lenderTotal - existingEmi)
   const householdIncome = Math.max(0, income + safeNumber(otherHouseholdIncome))
   const safeTotal = householdIncome * RULES.safeFoir
-  const foirSafeAvailable = Math.max(0, safeTotal - existingEmi)
   const expensesComplete = profile.expensesKnown === true && Number.isFinite(Number(profile.monthlyExpenses))
   const monthlyExpenses = expensesComplete ? Math.max(0, Number(profile.monthlyExpenses)) : null
-  const cashflowSafeAvailable = expensesComplete ? Math.max(0, householdIncome - existingEmi - monthlyExpenses) : null
-  const safeAvailable = expensesComplete ? Math.min(foirSafeAvailable, cashflowSafeAvailable) : foirSafeAvailable
-  return { existingEmi, lenderTotal, safeTotal, lenderAvailable, safeAvailable, foirSafeAvailable, monthlyExpenses, cashflowSafeAvailable, householdIncome, otherHouseholdIncome: Math.max(0, safeNumber(otherHouseholdIncome)), expenseBuffer: expensesComplete ? cashflowSafeAvailable : null }
+  const safeAvailable = expensesComplete
+    ? Math.max(0, safeTotal - existingEmi - monthlyExpenses)
+    : Math.max(0, safeTotal - existingEmi)
+  return {
+    existingEmi,
+    lenderTotal,
+    safeTotal,
+    lenderAvailable,
+    safeAvailable,
+    monthlyExpenses,
+    householdIncome,
+    otherHouseholdIncome: Math.max(0, safeNumber(otherHouseholdIncome)),
+  }
 }
 
 function productRoute(profile) {
@@ -136,11 +145,16 @@ function confidence(profile, normalized) {
 }
 
 function buildTenureTradeoff(principal, annualRate, tenure, maximumTenure) {
-  const candidates = [36, tenure, 60]
-    .map((months) => clamp(months, RULES.minTenureMonths, Math.min(RULES.maxTenureMonths, maximumTenure)))
+  const max = Math.min(RULES.maxTenureMonths, maximumTenure)
+  const preferred = [36, 48, 60]
+    .map((months) => clamp(months, RULES.minTenureMonths, max))
     .filter((months, index, values) => values.indexOf(months) === index)
-    .sort((a, b) => a - b)
-  return candidates.map((months) => {
+  if (!preferred.includes(tenure)) {
+    preferred.push(clamp(tenure, RULES.minTenureMonths, max))
+  }
+  const candidates = preferred.sort((a, b) => a - b).slice(-3)
+  if (!candidates.includes(tenure)) candidates[0] = tenure
+  return [...new Set(candidates)].sort((a, b) => a - b).map((months) => {
     const emi = calculateEmi(principal, annualRate, months)
     return { months, emi, totalInterest: Math.max(0, emi * months - principal), isSelected: months === tenure }
   })
@@ -169,23 +183,22 @@ export function evaluateBorrower(profile) {
   const requestedTooHigh = requested > practicalAmount
   const decision = severeDebt || noCapacity ? 'DON’T BORROW' : requestedTooHigh ? 'BORROW LESS' : 'BORROW'
   const decisionReason = severeDebt ? 'Existing high-cost debt and a recent bounce mean new borrowing could deepen the debt problem.' : noCapacity ? 'The conservative monthly headroom is already used by existing commitments and household costs.' : requestedTooHigh ? `The request is above the practical amount of ${formatLakhs(practicalAmount)} that is both affordable and within the lender-side estimate.` : 'The request fits inside both the lender-side estimate and the conservative household ceiling.'
-  const aprLow = calculateApr(safe, rate.min, tenure).apr
-  const aprHigh = calculateApr(safe, rate.max, tenure).apr
+  const aprLow = calculateApr(practicalAmount, rate.min, tenure).apr
+  const aprHigh = calculateApr(practicalAmount, rate.max, tenure).apr
+  const aprFee = practicalAmount * RULES.processingFee
   const age = safeNumber(profile.age)
   const maximumTenure = age ? Math.max(RULES.minTenureMonths, Math.min(RULES.maxTenureMonths, (RULES.retirementAge - age) * 12)) : RULES.maxTenureMonths
-  const tenureTradeoff = buildTenureTradeoff(safe, averageRate, tenure, maximumTenure)
+  const tenureTradeoff = buildTenureTradeoff(practicalAmount, averageRate, tenure, maximumTenure)
   const tenureNote = age && tenure < safeNumber(profile.tenureMonths, tenure) ? `Tenure is limited to ${tenure} months using the ${RULES.retirementAge}-year age assumption.` : `Tenure used is ${tenure} months.`
   const expenseNote = affordabilityResult.monthlyExpenses != null
-    ? affordabilityResult.cashflowSafeAvailable < affordabilityResult.foirSafeAvailable
-      ? `Household expenses of ${formatInr(affordabilityResult.monthlyExpenses)} reduce the safe cash-flow ceiling to ${formatInr(affordabilityResult.cashflowSafeAvailable)}.`
-      : `Household expenses of ${formatInr(affordabilityResult.monthlyExpenses)} were checked; the ${RULES.safeFoir * 100}% FOIR ceiling is still tighter, so it remains the binding limit.`
+    ? `Household expenses of ${formatInr(affordabilityResult.monthlyExpenses)} are subtracted from the ${RULES.safeFoir * 100}% FOIR ceiling after existing EMIs, leaving ${formatInr(affordabilityResult.safeAvailable)} for a new EMI.`
     : 'Household expenses are not known, so the safe amount uses the FOIR ceiling and confidence is lower.'
-  const householdIncomeNote = otherHouseholdIncome > 0 ? `${formatInr(otherHouseholdIncome)} of other household income is included in the borrower-safe household cash-flow calculation, but not in lender-side sanction capacity.` : 'No other household income is included in the safe household calculation.'
-  return { normalized, affordability: affordabilityResult, route, rate, lenderAmount, safeAmount: safe, practicalAmount, requested, decision, decisionReason, stress, confidence: confidence(profile, normalized), apr: { min: aprLow, max: aprHigh, fee: safe * RULES.processingFee }, recommendedEmi: affordabilityResult.safeAvailable, tenure, tenureTradeoff, explanation: [normalized.method, `Existing EMI of ${formatInr(affordabilityResult.existingEmi)} is counted before new borrowing.`, `Safe headroom is ${formatInr(affordabilityResult.safeAvailable)} at the ${RULES.safeFoir * 100}% borrower-safe ceiling.`, householdIncomeNote, `Practical amount is the lower of lender-side capacity (${formatLakhs(lenderAmount)}) and borrower-safe capacity (${formatLakhs(safe)}).`, expenseNote, tenureNote, route.reason] }
+  const householdIncomeNote = otherHouseholdIncome > 0 ? `${formatInr(otherHouseholdIncome)} of other household income is included in the borrower-safe household calculation, but not in lender-side sanction capacity.` : 'No other household income is included in the safe household calculation.'
+  return { normalized, affordability: affordabilityResult, route, rate, lenderAmount, safeAmount: safe, practicalAmount, requested, decision, decisionReason, stress, confidence: confidence(profile, normalized), apr: { min: aprLow, max: aprHigh, fee: aprFee }, recommendedEmi: affordabilityResult.safeAvailable, tenure, tenureTradeoff, explanation: [normalized.method, `Existing EMI of ${formatInr(affordabilityResult.existingEmi)} is counted before new borrowing.`, `Safe headroom is ${formatInr(affordabilityResult.safeAvailable)} after applying the ${RULES.safeFoir * 100}% borrower-safe FOIR rule.`, householdIncomeNote, `Practical amount is the lower of lender-side capacity (${formatLakhs(lenderAmount)}) and borrower-safe capacity (${formatLakhs(safe)}).`, expenseNote, tenureNote, route.reason] }
 }
 
 export const SAMPLE_BORROWERS = {
-  Priya: { name: 'Priya', age: 29, city: 'Bengaluru', incomeType: 'salaried', monthlyIncome: 110000, existingEmi: 14000, otherHouseholdIncome: 0, expensesKnown: false, monthlyExpenses: null, creditScore: 780, requestedAmount: 800000, purpose: 'wedding', loanType: 'personal', tenureMonths: 48, recentBounce: false, highCostDebt: false, collateralValue: 0 },
+  Priya: { name: 'Priya', age: 29, city: 'Bengaluru', incomeType: 'salaried', monthlyIncome: 110000, existingEmi: 14000, otherHouseholdIncome: 0, expensesKnown: true, monthlyExpenses: 28000, creditScore: 780, requestedAmount: 800000, purpose: 'wedding', loanType: 'personal', tenureMonths: 48, recentBounce: false, highCostDebt: false, collateralValue: 0 },
   Ravi: { name: 'Ravi', age: 42, city: 'Mysuru', incomeType: 'self-employed', monthlyIncome: 60000, incomeLow: 40000, incomeHigh: 80000, documentedAnnualIncome: 420000, existingEmi: 0, otherHouseholdIncome: 18000, expensesKnown: false, monthlyExpenses: null, creditScore: null, requestedAmount: 1500000, purpose: 'business', loanType: 'business', collateralValue: 4500000, tenureMonths: 60, recentBounce: false, highCostDebt: false },
   Anita: { name: 'Anita', age: 35, city: 'Hubballi', incomeType: 'variable', incomeLow: 26000, incomeHigh: 30000, documentedAnnualIncome: 0, existingEmi: 1050, otherHouseholdIncome: 0, expensesKnown: false, monthlyExpenses: null, creditScore: null, requestedAmount: 150000, purpose: 'vehicle', loanType: 'vehicle', collateralValue: 0, tenureMonths: 36, recentBounce: true, highCostDebt: true },
 }
