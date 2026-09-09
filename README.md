@@ -42,6 +42,7 @@ The main domain logic is in `src/domain/rules.js` and is separate from the React
 - Rate bands with explicit adjustments for credit uncertainty, income type, recent bounce and high-cost debt.
 - All-in APR estimate with the processing fee included.
 - A stress case with lower income and a higher rate.
+- A numeric tenure trade-off showing EMI and total interest for nearby terms.
 - Confidence based on missing or uncertain information.
 - Borrow / Borrow Less / Don't Borrow verdicts.
 - Negotiation Card with a lender quote comparison.
