@@ -35,13 +35,14 @@ The main domain logic is in `src/domain/rules.js` and is separate from the React
 
 - Adaptive questions based on income type, purpose and loan type.
 - Must-set questions for purpose, loan type, amount, income, existing EMIs, household expenses, age and credit score if known.
+- Other household income for borrowers who expect to rely on it; this affects borrower-safe household capacity but is not silently treated as lender/co-applicant income.
 - Conservative income normalization for self-employed and variable income.
 - Lender-side and borrower-safe EMI ceilings.
-- Household-expense check when the borrower knows the number.
+- Household-expense check when the borrower knows the number, with an explanation when FOIR is still the tighter limit.
 - Personal, business, secured/LAP and two-wheeler routes.
-- Rate bands with explicit adjustments for credit uncertainty, income type, recent bounce and high-cost debt.
+- Rate bands with explicit minimum and maximum adjustments for credit uncertainty, income type, recent bounce and high-cost debt.
 - All-in APR estimate with the processing fee included.
-- A stress case with lower income and a higher rate.
+- A stress case with lower borrower income and a higher rate.
 - A numeric tenure trade-off showing EMI and total interest for nearby terms.
 - Confidence based on missing or uncertain information.
 - Borrow / Borrow Less / Don't Borrow verdicts.
@@ -52,7 +53,7 @@ The main domain logic is in `src/domain/rules.js` and is separate from the React
 The app has the three borrowers from the challenge as prefilled examples:
 
 - Priya — Bengaluru, salaried, ₹1.10L net income, ₹14k car EMI, score 780, ₹8L wedding loan.
-- Ravi — Mysuru, self-employed, ₹4.2L documented annual income, ₹45L unencumbered shop, ₹15L business borrowing request.
+- Ravi — Mysuru, self-employed, ₹4.2L documented annual income, wife earns ₹18k/month, ₹45L unencumbered shop, ₹15L business borrowing request.
 - Anita — Hubballi, variable income, existing app debt, recent bounce, ₹1.5L vehicle request.
 
 See `three-runs/` for the written run-throughs. Add the screenshots from the actual app beside each `run.md` before submission.
@@ -80,4 +81,4 @@ Important: the rate bands, FOIR, LTV, processing fee and stress values are proto
 
 ## Limits
 
-This is a planning tool, not an approval system. It does not know the actual bureau report, lender underwriting rules, verified income or expenses, exact collateral value, lender rate card, or full KFS terms. The borrower should compare the actual lender quote and KFS with the card.
+This is a planning tool, not an approval system. It does not know the actual bureau report, lender underwriting rules, verified income or expenses, whether another household earner is a formal co-applicant, exact collateral value, lender rate card, or full KFS terms. The borrower should compare the actual lender quote and KFS with the card.
