@@ -108,9 +108,11 @@ function rateBand(profile, route) {
 }
 
 function calculateApr(principal, annualRate, tenureMonths) {
-  const fee = Math.max(0, principal) * RULES.processingFee
-  const net = Math.max(0, principal - fee)
-  const emi = calculateEmi(principal, annualRate, tenureMonths)
+  const amount = Math.max(0, safeNumber(principal))
+  if (!amount) return { apr: 0, fee: 0, net: 0 }
+  const fee = amount * RULES.processingFee
+  const net = amount - fee
+  const emi = calculateEmi(amount, annualRate, tenureMonths)
   let low = 0
   let high = 1
   for (let i = 0; i < 80; i += 1) {
@@ -131,6 +133,17 @@ function confidence(profile, normalized) {
   if (profile.recentBounce) score -= 1
   if (!safeNumber(profile.age)) score -= 1
   return { level: score >= 3 ? 'High' : score >= 2 ? 'Medium' : 'Low', score, reason: `${profile.creditScore == null ? 'Credit history is unavailable. ' : ''}${profile.incomeType !== 'salaried' ? 'Income is variable or partly undocumented. ' : ''}${!expensesComplete ? 'Household expenses are incomplete. ' : ''}${!safeNumber(profile.age) ? 'Age is unavailable. ' : ''}${profile.recentBounce ? 'A recent bounce makes the risk picture less settled.' : `Income was normalized to ${formatInr(normalized.monthly)}.`}`.trim() }
+}
+
+function buildTenureTradeoff(principal, annualRate, tenure, maximumTenure) {
+  const candidates = [36, tenure, 60]
+    .map((months) => clamp(months, RULES.minTenureMonths, Math.min(RULES.maxTenureMonths, maximumTenure)))
+    .filter((months, index, values) => values.indexOf(months) === index)
+    .sort((a, b) => a - b)
+  return candidates.map((months) => {
+    const emi = calculateEmi(principal, annualRate, months)
+    return { months, emi, totalInterest: Math.max(0, emi * months - principal), isSelected: months === tenure }
+  })
 }
 
 export function evaluateBorrower(profile) {
@@ -154,12 +167,14 @@ export function evaluateBorrower(profile) {
   const requestedTooHigh = requested > safe
   const decision = severeDebt || noCapacity ? 'DON’T BORROW' : requestedTooHigh ? 'BORROW LESS' : 'BORROW'
   const decisionReason = severeDebt ? 'Existing high-cost debt and a recent bounce mean new borrowing could deepen the debt problem.' : noCapacity ? 'The conservative monthly headroom is already used by existing commitments and household costs.' : requestedTooHigh ? `The request is above the borrower-safe amount of ${formatLakhs(safe)}.` : 'The request fits inside the conservative EMI ceiling.'
-  const aprLow = calculateApr(Math.max(1, safe), rate.min, tenure).apr
-  const aprHigh = calculateApr(Math.max(1, safe), rate.max, tenure).apr
+  const aprLow = calculateApr(safe, rate.min, tenure).apr
+  const aprHigh = calculateApr(safe, rate.max, tenure).apr
   const age = safeNumber(profile.age)
+  const maximumTenure = age ? Math.max(RULES.minTenureMonths, Math.min(RULES.maxTenureMonths, (RULES.retirementAge - age) * 12)) : RULES.maxTenureMonths
+  const tenureTradeoff = buildTenureTradeoff(safe, averageRate, tenure, maximumTenure)
   const tenureNote = age && tenure < safeNumber(profile.tenureMonths, tenure) ? `Tenure is limited to ${tenure} months using the ${RULES.retirementAge}-year age assumption.` : `Tenure used is ${tenure} months.`
   const expenseNote = affordabilityResult.monthlyExpenses != null ? `Household expenses of ${formatInr(affordabilityResult.monthlyExpenses)} are included in the safe cash-flow check.` : 'Household expenses are not known, so the safe amount uses the FOIR ceiling and confidence is lower.'
-  return { normalized, affordability: affordabilityResult, route, rate, lenderAmount, safeAmount: safe, requested, decision, decisionReason, stress, confidence: confidence(profile, normalized), apr: { min: aprLow, max: aprHigh, fee: Math.max(1, safe) * RULES.processingFee }, recommendedEmi: affordabilityResult.safeAvailable, tenure, explanation: [normalized.method, `Existing EMI of ${formatInr(affordabilityResult.existingEmi)} is counted before new borrowing.`, `Safe headroom is ${formatInr(affordabilityResult.safeAvailable)} at the ${RULES.safeFoir * 100}% borrower-safe ceiling.`, expenseNote, tenureNote, route.reason] }
+  return { normalized, affordability: affordabilityResult, route, rate, lenderAmount, safeAmount: safe, requested, decision, decisionReason, stress, confidence: confidence(profile, normalized), apr: { min: aprLow, max: aprHigh, fee: safe * RULES.processingFee }, recommendedEmi: affordabilityResult.safeAvailable, tenure, tenureTradeoff, explanation: [normalized.method, `Existing EMI of ${formatInr(affordabilityResult.existingEmi)} is counted before new borrowing.`, `Safe headroom is ${formatInr(affordabilityResult.safeAvailable)} at the ${RULES.safeFoir * 100}% borrower-safe ceiling.`, expenseNote, tenureNote, route.reason] }
 }
 
 export const SAMPLE_BORROWERS = {
