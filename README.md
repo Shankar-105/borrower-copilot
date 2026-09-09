@@ -37,13 +37,13 @@ The main domain logic is in `src/domain/rules.js` and is separate from the React
 - Must-set questions for purpose, loan type, amount, income, existing EMIs, household expenses, age and credit score if known.
 - Other household income for borrowers who expect to rely on it; this affects borrower-safe household capacity but is not silently treated as lender/co-applicant income.
 - Conservative income normalization for self-employed and variable income.
-- Lender-side and borrower-safe EMI ceilings.
-- Household-expense check when the borrower knows the number, with an explanation when FOIR is still the tighter limit.
+- Separate lender-side and borrower-safe EMI ceilings.
+- **Known household expenses are subtracted inside the borrower-safe FOIR calculation.** For example, ₹1.10L income at 40% gives ₹44k, then ₹14k existing EMI and ₹28k expenses leave ₹2k for a new EMI.
 - Personal, business, secured/LAP and two-wheeler routes.
 - Rate bands with explicit minimum and maximum adjustments for credit uncertainty, income type, recent bounce and high-cost debt.
-- All-in APR estimate with the processing fee included.
-- A stress case with lower borrower income and a higher rate.
-- A numeric tenure trade-off showing EMI and total interest for nearby terms.
+- All-in APR estimate with the processing fee included, calculated on the practical amount shown on the card.
+- A stress case with lower borrower income and a higher rate, while keeping known household expenses in the safe calculation.
+- A numeric tenure trade-off showing EMI and total interest for nearby terms around the selected tenure.
 - Confidence based on missing or uncertain information.
 - Borrow / Borrow Less / Don't Borrow verdicts.
 - Negotiation Card with a lender quote comparison.
@@ -52,7 +52,7 @@ The main domain logic is in `src/domain/rules.js` and is separate from the React
 
 The app has the three borrowers from the challenge as prefilled examples:
 
-- Priya — Bengaluru, salaried, ₹1.10L net income, ₹14k car EMI, score 780, ₹8L wedding loan.
+- Priya — Bengaluru, salaried, ₹1.10L net income, ₹14k car EMI, score 780, ₹28k expense input, ₹8L wedding loan.
 - Ravi — Mysuru, self-employed, ₹4.2L documented annual income, wife earns ₹18k/month, ₹45L unencumbered shop, ₹15L business borrowing request.
 - Anita — Hubballi, variable income, existing app debt, recent bounce, ₹1.5L vehicle request.
 
