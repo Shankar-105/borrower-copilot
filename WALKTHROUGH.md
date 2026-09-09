@@ -4,7 +4,9 @@
 
 Borrower Copilot is a local borrower self-assessment. A borrower enters the information they know and gets four answers: whether to borrow, a lender-side amount and a safer amount, a fair rate range with APR, and an EMI ceiling with a stress case.
 
-The result also has a Negotiation Card that can be used when speaking to a lender.
+The result also shows a small tenure trade-off: nearby terms with their EMI and total interest, so the borrower can see what they gain by stretching or shortening the loan.
+
+There is also a Negotiation Card that can be used when speaking to a lender.
 
 There is no login, backend, bureau pull or stored personal data.
 
@@ -17,6 +19,8 @@ The app uses her full net income. At 50% FOIR the estimated lender-side new EMI 
 At the midpoint of the rate band, that gives about ₹15.3L lender-side capacity and about ₹11.2L borrower-safe amount. Her ₹8L request fits the safe amount, so the base verdict is BORROW.
 
 Her total household expenses are not supplied by the challenge, so the app does not make up a number. Confidence is Medium.
+
+The result also shows 36/48/60-month EMI and interest trade-offs on the safe amount. The shorter term costs less interest but has a higher EMI; the longer term lowers EMI but costs more interest.
 
 The stress case is close: after a 15% income drop and a 2-point rate increase, the requested EMI is slightly above the stressed safe room. I would use that as a reason to keep the request close to ₹8L or lower, even though the base verdict is BORROW.
 
