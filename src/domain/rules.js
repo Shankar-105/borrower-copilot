@@ -71,21 +71,11 @@ function affordability(profile, income) {
   const safeTotal = income * RULES.safeFoir
   const lenderAvailable = Math.max(0, lenderTotal - existingEmi)
   const foirSafeAvailable = Math.max(0, safeTotal - existingEmi)
-  const expensesKnown = profile.expensesKnown === true
-  const monthlyExpenses = expensesKnown ? Math.max(0, safeNumber(profile.monthlyExpenses)) : null
-  const cashflowSafeAvailable = expensesKnown ? Math.max(0, income - existingEmi - monthlyExpenses) : null
-  const safeAvailable = expensesKnown ? Math.min(foirSafeAvailable, cashflowSafeAvailable) : foirSafeAvailable
-  return {
-    existingEmi,
-    lenderTotal,
-    safeTotal,
-    lenderAvailable,
-    safeAvailable,
-    foirSafeAvailable,
-    monthlyExpenses,
-    cashflowSafeAvailable,
-    expenseBuffer: expensesKnown ? cashflowSafeAvailable : null,
-  }
+  const expensesComplete = profile.expensesKnown === true && Number.isFinite(Number(profile.monthlyExpenses))
+  const monthlyExpenses = expensesComplete ? Math.max(0, Number(profile.monthlyExpenses)) : null
+  const cashflowSafeAvailable = expensesComplete ? Math.max(0, income - existingEmi - monthlyExpenses) : null
+  const safeAvailable = expensesComplete ? Math.min(foirSafeAvailable, cashflowSafeAvailable) : foirSafeAvailable
+  return { existingEmi, lenderTotal, safeTotal, lenderAvailable, safeAvailable, foirSafeAvailable, monthlyExpenses, cashflowSafeAvailable, expenseBuffer: expensesComplete ? cashflowSafeAvailable : null }
 }
 
 function productRoute(profile) {
@@ -93,12 +83,8 @@ function productRoute(profile) {
   if (profile.collateralValue > 0 && (loanType === 'lap' || loanType === 'business' || profile.purpose === 'business' || profile.incomeType === 'self-employed')) {
     return { product: 'Loan against property / business loan', key: 'lap', reason: 'The business purpose and supplied property make a secured business route more suitable than an unsecured personal loan in this prototype.' }
   }
-  if (loanType === 'business' || profile.purpose === 'business') {
-    return { product: 'Business loan', key: 'business', reason: 'The stated purpose is business, so a business-finance route is used instead of a personal loan.' }
-  }
-  if (loanType === 'vehicle' || profile.purpose === 'vehicle') {
-    return { product: 'Two-wheeler loan', key: 'twoWheeler', reason: 'The loan is for a two-wheeler, so the vehicle route is used.' }
-  }
+  if (loanType === 'business' || profile.purpose === 'business') return { product: 'Business loan', key: 'business', reason: 'The stated purpose is business, so a business-finance route is used instead of a personal loan.' }
+  if (loanType === 'vehicle' || profile.purpose === 'vehicle') return { product: 'Two-wheeler loan', key: 'twoWheeler', reason: 'The loan is for a two-wheeler, so the vehicle route is used.' }
   return { product: 'Personal loan', key: 'personal', reason: 'The stated purpose is personal and no secured or vehicle route was selected.' }
 }
 
@@ -140,10 +126,11 @@ function confidence(profile, normalized) {
   let score = 3
   if (profile.creditScore == null) score -= 1
   if (profile.incomeType !== 'salaried') score -= 1
-  if (profile.expensesKnown !== true) score -= 1
+  const expensesComplete = profile.expensesKnown === true && Number.isFinite(Number(profile.monthlyExpenses))
+  if (!expensesComplete) score -= 1
   if (profile.recentBounce) score -= 1
   if (!safeNumber(profile.age)) score -= 1
-  return { level: score >= 3 ? 'High' : score >= 2 ? 'Medium' : 'Low', score, reason: `${profile.creditScore == null ? 'Credit history is unavailable. ' : ''}${profile.incomeType !== 'salaried' ? 'Income is variable or partly undocumented. ' : ''}${profile.expensesKnown !== true ? 'Household expenses are incomplete. ' : ''}${!safeNumber(profile.age) ? 'Age is unavailable. ' : ''}${profile.recentBounce ? 'A recent bounce makes the risk picture less settled.' : `Income was normalized to ${formatInr(normalized.monthly)}.`}`.trim() }
+  return { level: score >= 3 ? 'High' : score >= 2 ? 'Medium' : 'Low', score, reason: `${profile.creditScore == null ? 'Credit history is unavailable. ' : ''}${profile.incomeType !== 'salaried' ? 'Income is variable or partly undocumented. ' : ''}${!expensesComplete ? 'Household expenses are incomplete. ' : ''}${!safeNumber(profile.age) ? 'Age is unavailable. ' : ''}${profile.recentBounce ? 'A recent bounce makes the risk picture less settled.' : `Income was normalized to ${formatInr(normalized.monthly)}.`}`.trim() }
 }
 
 export function evaluateBorrower(profile) {
@@ -171,30 +158,14 @@ export function evaluateBorrower(profile) {
   const aprHigh = calculateApr(Math.max(1, safe), rate.max, tenure).apr
   const age = safeNumber(profile.age)
   const tenureNote = age && tenure < safeNumber(profile.tenureMonths, tenure) ? `Tenure is limited to ${tenure} months using the ${RULES.retirementAge}-year age assumption.` : `Tenure used is ${tenure} months.`
-  const expenseNote = profile.expensesKnown === true ? `Household expenses of ${formatInr(affordabilityResult.monthlyExpenses)} are included in the safe cash-flow check.` : 'Household expenses are not known, so the safe amount uses the FOIR ceiling and confidence is lower.'
-  return {
-    normalized,
-    affordability: affordabilityResult,
-    route,
-    rate,
-    lenderAmount,
-    safeAmount: safe,
-    requested,
-    decision,
-    decisionReason,
-    stress,
-    confidence: confidence(profile, normalized),
-    apr: { min: aprLow, max: aprHigh, fee: Math.max(1, safe) * RULES.processingFee },
-    recommendedEmi: affordabilityResult.safeAvailable,
-    tenure,
-    explanation: [normalized.method, `Existing EMI of ${formatInr(affordabilityResult.existingEmi)} is counted before new borrowing.`, `Safe headroom is ${formatInr(affordabilityResult.safeAvailable)} at the ${RULES.safeFoir * 100}% borrower-safe ceiling.`, expenseNote, tenureNote, route.reason],
-  }
+  const expenseNote = affordabilityResult.monthlyExpenses != null ? `Household expenses of ${formatInr(affordabilityResult.monthlyExpenses)} are included in the safe cash-flow check.` : 'Household expenses are not known, so the safe amount uses the FOIR ceiling and confidence is lower.'
+  return { normalized, affordability: affordabilityResult, route, rate, lenderAmount, safeAmount: safe, requested, decision, decisionReason, stress, confidence: confidence(profile, normalized), apr: { min: aprLow, max: aprHigh, fee: Math.max(1, safe) * RULES.processingFee }, recommendedEmi: affordabilityResult.safeAvailable, tenure, explanation: [normalized.method, `Existing EMI of ${formatInr(affordabilityResult.existingEmi)} is counted before new borrowing.`, `Safe headroom is ${formatInr(affordabilityResult.safeAvailable)} at the ${RULES.safeFoir * 100}% borrower-safe ceiling.`, expenseNote, tenureNote, route.reason] }
 }
 
 export const SAMPLE_BORROWERS = {
-  Priya: { name: 'Priya', age: 29, city: 'Bengaluru', incomeType: 'salaried', monthlyIncome: 110000, existingEmi: 14000, expensesKnown: false, monthlyExpenses: 0, creditScore: 780, requestedAmount: 800000, purpose: 'wedding', loanType: 'personal', tenureMonths: 48, recentBounce: false, highCostDebt: false, collateralValue: 0 },
-  Ravi: { name: 'Ravi', age: 42, city: 'Mysuru', incomeType: 'self-employed', monthlyIncome: 60000, incomeLow: 40000, incomeHigh: 80000, documentedAnnualIncome: 420000, existingEmi: 0, expensesKnown: false, monthlyExpenses: 0, creditScore: null, requestedAmount: 1500000, purpose: 'business', loanType: 'business', collateralValue: 4500000, tenureMonths: 60, recentBounce: false, highCostDebt: false },
-  Anita: { name: 'Anita', age: 35, city: 'Hubballi', incomeType: 'variable', incomeLow: 26000, incomeHigh: 30000, existingEmi: 1050, expensesKnown: false, monthlyExpenses: 0, creditScore: null, requestedAmount: 150000, purpose: 'vehicle', loanType: 'vehicle', collateralValue: 0, tenureMonths: 36, recentBounce: true, highCostDebt: true },
+  Priya: { name: 'Priya', age: 29, city: 'Bengaluru', incomeType: 'salaried', monthlyIncome: 110000, existingEmi: 14000, expensesKnown: false, monthlyExpenses: null, creditScore: 780, requestedAmount: 800000, purpose: 'wedding', loanType: 'personal', tenureMonths: 48, recentBounce: false, highCostDebt: false, collateralValue: 0 },
+  Ravi: { name: 'Ravi', age: 42, city: 'Mysuru', incomeType: 'self-employed', monthlyIncome: 60000, incomeLow: 40000, incomeHigh: 80000, documentedAnnualIncome: 420000, existingEmi: 0, expensesKnown: false, monthlyExpenses: null, creditScore: null, requestedAmount: 1500000, purpose: 'business', loanType: 'business', collateralValue: 4500000, tenureMonths: 60, recentBounce: false, highCostDebt: false },
+  Anita: { name: 'Anita', age: 35, city: 'Hubballi', incomeType: 'variable', incomeLow: 26000, incomeHigh: 30000, documentedAnnualIncome: 0, existingEmi: 1050, expensesKnown: false, monthlyExpenses: null, creditScore: null, requestedAmount: 150000, purpose: 'vehicle', loanType: 'vehicle', collateralValue: 0, tenureMonths: 36, recentBounce: true, highCostDebt: true },
 }
 
 export const QUESTION_DEFINITIONS = [
