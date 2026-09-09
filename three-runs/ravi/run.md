@@ -56,7 +56,7 @@ Confidence: **Low** because the credit score and household expenses are not know
 - Final borrower-safe amount: **about ₹8.8L**
 - Safe EMI ceiling: **₹21,200/month**
 
-The borrower should use the **₹8.8L borrower-safe amount**. The ₹22.5L collateral cap is only an upper limit. The safe household calculation includes Ravi's wife's ₹18k income, while lender-side capacity still uses Ravi's documented income only.
+The borrower should use the lower of the lender-side and borrower-safe numbers when thinking about an amount they can actually obtain today: about **₹7.3L** from the current lender-capacity model. The ₹8.8L figure is the household affordability ceiling. The ₹22.5L collateral cap is only an upper limit.
 
 ## O3 — What rate?
 
@@ -69,27 +69,29 @@ The secured route starts from the 10%–14% prototype band. Unknown credit adds 
 
 ## O4 — What EMI?
 
-- Base safe EMI ceiling: **₹21,200/month**
+- Base borrower-safe EMI ceiling: **₹21,200/month**
+- Practical amount to negotiate under the current lender-capacity model: **about ₹7.3L**
 - Tenure used: **60 months**
-- Tenure trade-off on the safe amount at the 15.5% midpoint:
-  - 36 months: about **₹30.5k EMI**, about **₹2.1L total interest**
-  - 48 months: about **₹25.6k EMI**, about **₹3.4L total interest**
-  - 60 months: about **₹21.2k EMI**, about **₹3.8L total interest** — selected
+- Tenure trade-off on the ₹8.8L household-safe amount at the 15.5% midpoint:
+  - 36 months: about **₹30.8k EMI**, about **₹2.3L total interest**
+  - 48 months: about **₹24.8k EMI**, about **₹3.1L total interest**
+  - 60 months: about **₹21.2k EMI**, about **₹3.9L total interest** — selected
 - Stress borrower income after a 15% drop: **₹29,750/month**
 - Stress household income including wife's income: **₹47,750/month**
 - Stressed safe EMI room: **₹19,100/month**
 - Requested ₹15L EMI at the stressed rate of 20%: **about ₹39,741/month**
 - Stress result: **Buffer breaks**
 
-The trade-off shows why the selected 60 months fits the safe EMI ceiling better, but also costs more total interest than shorter terms.
+The trade-off shows why the selected 60 months fits the household-safe EMI ceiling better, but also costs more total interest than shorter terms.
 
-The requested amount is still far above the safe range, so the borrower should reduce the request before going to the lender.
+The requested amount is still far above both practical lender capacity and household-safe affordability, so the borrower should reduce the request before going to the lender.
 
 ## Negotiation Card
 
 The card should show:
 
-- Recommended amount: **about ₹8.8L**
+- Borrower-safe household amount: **about ₹8.8L**
+- Practical lender-capacity comparison: **about ₹7.3L**
 - Fair rate: **13%–18%**
 - APR including fee: **about 14.8%–20.7%**
 - EMI ceiling: **₹21,200/month**
