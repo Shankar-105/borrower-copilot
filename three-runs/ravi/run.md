@@ -69,10 +69,16 @@ The secured route starts from the 10%–14% prototype band. Unknown credit adds 
 
 - Base safe EMI ceiling: **₹14,000/month**
 - Tenure used: **60 months**
+- Tenure trade-off on the safe amount at the 15.5% midpoint:
+  - 36 months: about **₹20.3k EMI**, about **₹1.49L total interest**
+  - 48 months: about **₹16.3k EMI**, about **₹2.03L total interest**
+  - 60 months: about **₹14.0k EMI**, about **₹2.58L total interest** — selected
 - Stress income after a 15% drop: **₹29,750/month**
 - Stressed safe EMI room: **₹11,900/month**
 - Requested ₹15L EMI at the stressed rate of 20%: **about ₹39,741/month**
 - Stress result: **Buffer breaks**
+
+The trade-off shows why the selected 60 months fits the safe EMI ceiling better, but also costs more total interest than shorter terms.
 
 The requested amount is far above the safe range, so the borrower should reduce the request before going to the lender.
 
