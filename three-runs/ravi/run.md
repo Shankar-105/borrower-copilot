@@ -56,35 +56,35 @@ Confidence: **Low** because the credit score and household expenses are not know
 - Practical amount to plan around: **about ₹7.3L**
 - Safe EMI ceiling: **₹21,200/month**
 
-The borrower-safe amount is the household affordability ceiling. The practical amount is the lower of lender-side capacity and borrower-safe capacity, because the borrower needs an amount they can both carry and realistically obtain. Here the lender-side number is lower, so the card uses about ₹7.3L as the practical amount.
+The borrower-safe amount uses Ravi's normalized ₹35k borrower income plus his wife's ₹18k household income. The lender-side number uses Ravi's ₹35k normalized income only.
+
+The practical amount is the lower of lender-side capacity and borrower-safe capacity, so the card uses about ₹7.3L.
 
 ## O3 — What rate?
 
 - Route: **Loan against property / business loan**
 - Fair rate band: **13%–18%**
 - All-in APR estimate: **about 14.8%–20.7%**
-- Prototype processing fee: **2%**, about ₹17,628 on the safe household amount
+- Prototype processing fee: **2%**, about ₹14,551 on the practical amount
 
-The secured route starts from the 10%–14% prototype band. Unknown credit adds **+2 pp to the minimum and +3 pp to the maximum**. Non-salaried income adds another 1 percentage point. The code now represents those unknown-credit adjustments explicitly.
+The secured route starts from the 10%–14% prototype band. Unknown credit adds **+2 pp to the minimum and +3 pp to the maximum**. Non-salaried income adds another 1 percentage point.
 
 ## O4 — What EMI?
 
 - Base borrower-safe EMI ceiling: **₹21,200/month**
 - Practical amount to plan around: **about ₹7.3L**
 - Tenure used: **60 months**
-- Tenure trade-off on the ₹8.8L household-safe amount at the 15.5% midpoint:
-  - 36 months: about **₹30.8k EMI**, about **₹2.3L total interest**
-  - 48 months: about **₹24.8k EMI**, about **₹3.1L total interest**
-  - 60 months: about **₹21.2k EMI**, about **₹3.9L total interest** — selected
+- Tenure trade-off on the practical amount at the 15.5% midpoint:
+  - 36 months: about **₹25.4k EMI**, about **₹1.9L total interest**
+  - 48 months: about **₹20.4k EMI**, about **₹2.5L total interest**
+  - 60 months: about **₹17.5k EMI**, about **₹3.2L total interest** — selected
 - Stress borrower income after a 15% drop: **₹29,750/month**
 - Stress household income including wife's income: **₹47,750/month**
 - Stressed safe EMI room: **₹19,100/month**
 - Requested ₹15L EMI at the stressed rate of 20%: **about ₹39,741/month**
 - Stress result: **Buffer breaks**
 
-The trade-off is shown on the household-safe amount because it explains the EMI ceiling. For an amount Ravi can realistically obtain today, the lender-side capacity is lower.
-
-The requested amount is far above both practical lender capacity and household-safe affordability, so the borrower should reduce the request before going to the lender.
+The trade-off uses the practical amount because that is the amount the card recommends. The safe EMI ceiling is still shown separately because it is the household's monthly limit.
 
 ## Negotiation Card
 
