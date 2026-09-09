@@ -20,6 +20,13 @@ describe('Borrower Copilot domain rules', () => {
     expect(result.decision).toBe('BORROW')
   })
 
+  it('uses known household expenses to reduce the borrower-safe headroom', () => {
+    const base = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: false })
+    const withExpenses = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: true, monthlyExpenses: 35000 })
+    expect(withExpenses.affordability.safeAvailable).toBeLessThan(base.affordability.safeAvailable)
+    expect(withExpenses.safeAmount).toBeLessThan(base.safeAmount)
+  })
+
   it('routes Ravi to secured business finance and accounts for collateral conservatively', () => {
     const result = evaluateBorrower(SAMPLE_BORROWERS.Ravi)
     expect(result.route.key).toBe('lap')
@@ -28,11 +35,21 @@ describe('Borrower Copilot domain rules', () => {
     expect(result.safeAmount).toBeLessThanOrEqual(SAMPLE_BORROWERS.Ravi.collateralValue * RULES.securedLtv)
   })
 
+  it('does not allow a request above the safe amount to pass as BORROW', () => {
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, requestedAmount: 1200000 })
+    expect(result.decision).toBe('BORROW LESS')
+  })
+
   it('reaches a real dont-borrow state for Anita', () => {
     const result = evaluateBorrower(SAMPLE_BORROWERS.Anita)
     expect(result.decision).toBe('DON’T BORROW')
     expect(result.rate.max).toBeGreaterThan(result.rate.min)
     expect(result.stress.survives).toBe(true)
+  })
+
+  it('keeps age in the tenure calculation when a borrower is close to the age limit', () => {
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, age: 58, tenureMonths: 48 })
+    expect(result.tenure).toBe(24)
   })
 
   it('never emits invalid values for missing income', () => {
