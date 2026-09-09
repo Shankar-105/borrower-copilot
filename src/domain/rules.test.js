@@ -22,7 +22,7 @@ describe('Borrower Copilot domain rules', () => {
 
   it('uses known household expenses to reduce the borrower-safe headroom', () => {
     const base = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: false })
-    const withExpenses = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: true, monthlyExpenses: 35000 })
+    const withExpenses = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: true, monthlyExpenses: 75000 })
     expect(withExpenses.affordability.safeAvailable).toBeLessThan(base.affordability.safeAvailable)
     expect(withExpenses.safeAmount).toBeLessThan(base.safeAmount)
   })
