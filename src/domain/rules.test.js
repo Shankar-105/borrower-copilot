@@ -17,11 +17,19 @@ describe('Borrower Copilot domain rules', () => {
     const result = evaluateBorrower(SAMPLE_BORROWERS.Priya)
     expect(result.affordability.lenderAvailable).toBeGreaterThan(result.affordability.safeAvailable)
     expect(result.lenderAmount).toBeGreaterThan(result.safeAmount)
-    expect(result.decision).toBe('BORROW')
+    expect(result.decision).toBe('BORROW LESS')
+  })
+
+  it('subtracts known household expenses inside the borrower-safe FOIR calculation', () => {
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: true, monthlyExpenses: 28000 })
+    expect(result.affordability.safeAvailable).toBe(2000)
+    expect(result.recommendedEmi).toBe(2000)
+    expect(result.safeAmount).toBeGreaterThan(0)
+    expect(result.safeAmount).toBeLessThan(100000)
   })
 
   it('uses known household expenses to reduce the borrower-safe headroom', () => {
-    const base = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: false })
+    const base = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: false, monthlyExpenses: null })
     const withExpenses = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: true, monthlyExpenses: 75000 })
     expect(withExpenses.affordability.safeAvailable).toBeLessThan(base.affordability.safeAvailable)
     expect(withExpenses.safeAmount).toBeLessThan(base.safeAmount)
@@ -32,11 +40,12 @@ describe('Borrower Copilot domain rules', () => {
     expect(result.route.key).toBe('lap')
     expect(result.route.product).toContain('business')
     expect(result.confidence.level).toBe('Low')
+    expect(result.affordability.householdIncome).toBe(53000)
     expect(result.safeAmount).toBeLessThanOrEqual(SAMPLE_BORROWERS.Ravi.collateralValue * RULES.securedLtv)
   })
 
   it('does not allow a request above the safe amount to pass as BORROW', () => {
-    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, requestedAmount: 1200000 })
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, requestedAmount: 1200000, expensesKnown: false })
     expect(result.decision).toBe('BORROW LESS')
   })
 
@@ -53,7 +62,7 @@ describe('Borrower Copilot domain rules', () => {
   })
 
   it('shows a real tenure tradeoff around the selected term', () => {
-    const result = evaluateBorrower(SAMPLE_BORROWERS.Priya)
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: false, monthlyExpenses: null })
     expect(result.tenureTradeoff.length).toBe(3)
     expect(result.tenureTradeoff.find((option) => option.months === 36).emi).toBeGreaterThan(result.tenureTradeoff.find((option) => option.months === 48).emi)
     expect(result.tenureTradeoff.find((option) => option.months === 60).emi).toBeLessThan(result.tenureTradeoff.find((option) => option.months === 48).emi)
