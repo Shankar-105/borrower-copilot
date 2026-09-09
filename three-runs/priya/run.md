@@ -66,10 +66,16 @@ The 780 score moves the personal-loan reference band down by 1.5 percentage poin
 
 - Base safe EMI ceiling: **₹30,000/month**
 - Tenure used: **48 months**
+- Tenure trade-off on the safe amount at the 13% midpoint:
+  - 36 months: about **₹37.7k EMI**, about **₹2.38L total interest**
+  - 48 months: about **₹30.0k EMI**, about **₹3.22L total interest** — selected
+  - 60 months: about **₹25.4k EMI**, about **₹4.08L total interest**
 - Stress income after a 15% drop: **₹93,500/month**
 - Stressed safe EMI room: **₹23,400/month**
 - Requested ₹8L EMI at the stressed rate of 18.5%: **about ₹23,710/month**
 - Stress result: **Buffer breaks slightly**
+
+The trade-off makes the tenure choice visible: a shorter loan raises the monthly outflow but reduces total interest; a longer loan lowers the monthly outflow but increases total interest.
 
 The base verdict is still BORROW because the stated request fits the current safe amount. The stress result tells Priya that ₹8L is close to the limit under a weaker income/higher-rate case.
 
