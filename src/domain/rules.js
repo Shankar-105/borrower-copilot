@@ -158,6 +158,7 @@ export function evaluateBorrower(profile) {
   const incomeSafeAmount = calculateMaximumPrincipal(affordabilityResult.safeAvailable, averageRate, tenure)
   const collateralCap = safeNumber(profile.collateralValue) * RULES.securedLtv
   const safe = Math.min(incomeSafeAmount, route.key === 'lap' && collateralCap > 0 ? collateralCap : incomeSafeAmount)
+  const practicalAmount = Math.min(lenderAmount, safe)
   const requested = Math.max(0, safeNumber(profile.requestedAmount))
   const stressIncome = normalized.monthly * (1 - RULES.stressIncomeDrop)
   const stressAffordability = affordability(profile, stressIncome, otherHouseholdIncome)
@@ -165,9 +166,9 @@ export function evaluateBorrower(profile) {
   const stress = { income: stressIncome, householdIncome: stressAffordability.householdIncome, safeAvailable: stressAffordability.safeAvailable, requestedEmi: stressEmi, survives: stressEmi <= stressAffordability.safeAvailable }
   const severeDebt = profile.highCostDebt === true && profile.recentBounce === true
   const noCapacity = affordabilityResult.safeAvailable <= 0
-  const requestedTooHigh = requested > safe
+  const requestedTooHigh = requested > practicalAmount
   const decision = severeDebt || noCapacity ? 'DON’T BORROW' : requestedTooHigh ? 'BORROW LESS' : 'BORROW'
-  const decisionReason = severeDebt ? 'Existing high-cost debt and a recent bounce mean new borrowing could deepen the debt problem.' : noCapacity ? 'The conservative monthly headroom is already used by existing commitments and household costs.' : requestedTooHigh ? `The request is above the borrower-safe amount of ${formatLakhs(safe)}.` : 'The request fits inside the conservative EMI ceiling.'
+  const decisionReason = severeDebt ? 'Existing high-cost debt and a recent bounce mean new borrowing could deepen the debt problem.' : noCapacity ? 'The conservative monthly headroom is already used by existing commitments and household costs.' : requestedTooHigh ? `The request is above the practical amount of ${formatLakhs(practicalAmount)} that is both affordable and within the lender-side estimate.` : 'The request fits inside both the lender-side estimate and the conservative household ceiling.'
   const aprLow = calculateApr(safe, rate.min, tenure).apr
   const aprHigh = calculateApr(safe, rate.max, tenure).apr
   const age = safeNumber(profile.age)
@@ -180,7 +181,7 @@ export function evaluateBorrower(profile) {
       : `Household expenses of ${formatInr(affordabilityResult.monthlyExpenses)} were checked; the ${RULES.safeFoir * 100}% FOIR ceiling is still tighter, so it remains the binding limit.`
     : 'Household expenses are not known, so the safe amount uses the FOIR ceiling and confidence is lower.'
   const householdIncomeNote = otherHouseholdIncome > 0 ? `${formatInr(otherHouseholdIncome)} of other household income is included in the borrower-safe household cash-flow calculation, but not in lender-side sanction capacity.` : 'No other household income is included in the safe household calculation.'
-  return { normalized, affordability: affordabilityResult, route, rate, lenderAmount, safeAmount: safe, requested, decision, decisionReason, stress, confidence: confidence(profile, normalized), apr: { min: aprLow, max: aprHigh, fee: safe * RULES.processingFee }, recommendedEmi: affordabilityResult.safeAvailable, tenure, tenureTradeoff, explanation: [normalized.method, `Existing EMI of ${formatInr(affordabilityResult.existingEmi)} is counted before new borrowing.`, `Safe headroom is ${formatInr(affordabilityResult.safeAvailable)} at the ${RULES.safeFoir * 100}% borrower-safe ceiling.`, householdIncomeNote, expenseNote, tenureNote, route.reason] }
+  return { normalized, affordability: affordabilityResult, route, rate, lenderAmount, safeAmount: safe, practicalAmount, requested, decision, decisionReason, stress, confidence: confidence(profile, normalized), apr: { min: aprLow, max: aprHigh, fee: safe * RULES.processingFee }, recommendedEmi: affordabilityResult.safeAvailable, tenure, tenureTradeoff, explanation: [normalized.method, `Existing EMI of ${formatInr(affordabilityResult.existingEmi)} is counted before new borrowing.`, `Safe headroom is ${formatInr(affordabilityResult.safeAvailable)} at the ${RULES.safeFoir * 100}% borrower-safe ceiling.`, householdIncomeNote, `Practical amount is the lower of lender-side capacity (${formatLakhs(lenderAmount)}) and borrower-safe capacity (${formatLakhs(safe)}).`, expenseNote, tenureNote, route.reason] }
 }
 
 export const SAMPLE_BORROWERS = {
