@@ -18,7 +18,7 @@ The app uses her full net income. At 50% FOIR the estimated lender-side new EMI 
 
 At the midpoint of the rate band, that gives about ₹15.3L lender-side capacity and about ₹11.2L borrower-safe amount. Her ₹8L request fits the safe amount, so the base verdict is BORROW.
 
-Her total household expenses are not supplied by the challenge, so the app does not make up a number. Confidence is Medium.
+Her total household expenses are not supplied by the challenge, so the app does not make up a number. If she enters ₹28k, the result explains that the 40% FOIR ceiling is still tighter than the remaining cash-flow room, so the safe amount can stay the same without silently ignoring the expense input.
 
 The result also shows 36/48/60-month EMI and interest trade-offs on the safe amount. The shorter term costs less interest but has a higher EMI; the longer term lowers EMI but costs more interest.
 
@@ -26,11 +26,13 @@ The stress case is close: after a 15% income drop and a 2-point rate increase, t
 
 ## 2:00–3:15 — Ravi
 
-Ravi is self-employed. He reports ₹40k–₹80k cash income, but his ITR shows ₹4.2L for the year. The app uses the documented figure, so normalized income is ₹35k/month.
+Ravi is self-employed. He reports ₹40k–₹80k cash income, but his ITR shows ₹4.2L for the year. The app uses the documented figure for lender-side capacity, so normalized borrower income is ₹35k/month.
 
-His business purpose and ₹45L unencumbered shop route him to a secured business/LAP route. The collateral cap is ₹22.5L, but his income-based safe amount is only about ₹5.8L. This shows why collateral should be a cap, not a replacement for repayment capacity.
+The challenge also says his wife earns ₹18k/month. The app now captures that as other household income. It is included in the borrower-safe household calculation because Ravi may rely on it for household cash flow, but it is not silently added to lender-side sanction capacity because the app has not established that she is a co-applicant.
 
-The ₹15L request is above the safe amount, so the verdict is BORROW LESS. Unknown credit and unknown household expenses make confidence Low.
+His business purpose and ₹45L unencumbered shop route him to a secured business/LAP route. The collateral cap is ₹22.5L. The lender-side capacity is about ₹7.3L, while the household-safe affordability ceiling is about ₹8.8L. For a real borrowing decision, I would use the lower practical number because the lender still has to sanction the loan.
+
+The ₹15L request is above both, so the verdict is BORROW LESS. Unknown credit and unknown household expenses make confidence Low.
 
 The stress case also breaks the buffer by a large amount.
 
@@ -45,6 +47,10 @@ But the app does not stop at the EMI calculation. High-cost debt plus a recent b
 ## 4:00–5:00 — Code and next steps
 
 The domain rules are in `src/domain/rules.js`, separate from the UI. The main assumptions are at the top of the file, so they can be changed in one place.
+
+The credit adjustment is deliberately explicit: unknown credit adds +2 percentage points to the minimum and +3 to the maximum. This avoids hiding one side of the rule inside a generic shared value.
+
+Household income and household expenses are also kept separate from lender-side borrower income. That makes the Ravi case easier to defend: a spouse's income can improve household affordability without pretending the lender will count it unless co-applicant treatment is established.
 
 If I had more time, I would add better verified expense and income history inputs, more lender-specific product data, and a fuller quote comparison using the lender's KFS values.
 
