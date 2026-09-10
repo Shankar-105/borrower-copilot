@@ -51,7 +51,7 @@ The collateral question is not shown because this is not a business/self-employe
 
 Priya's 40% borrower-safe FOIR ceiling is ₹44,000. After her ₹14,000 existing EMI, ₹28,000 rent and the ₹7,500 protective maintenance floor, there is no safe room left for a new EMI.
 
-The ₹8L request is therefore not supportable under the borrower-safe calculation. This is a stronger borrower-protective outcome than the earlier run-through, because the current code correctly keeps rent separate from general household spending and does not allow a ₹0 maintenance input to create artificial affordability.
+The ₹8L request is therefore not supportable under the borrower-safe calculation.
 
 Confidence: **High** because income, age, rent, expense status and credit score are supplied, with no recent bounce or high-cost debt.
 
@@ -59,6 +59,7 @@ Confidence: **High** because income, age, rent, expense status and credit score 
 
 - Estimated lender-side capacity: **about ₹15.3L**
 - Borrower-safe amount: **₹0**
+- Absolute feasible ceiling: **₹0**
 - Practical amount to plan around: **₹0**
 - New safe EMI ceiling: **₹0/month**
 
@@ -70,20 +71,21 @@ The calculation is:
 
 `₹44,000 - ₹14,000 existing EMI - ₹28,000 rent - ₹7,500 maintenance floor < ₹0`
 
-So the safe new EMI is `₹0` and the reverse EMI calculation produces a borrower-safe amount of `₹0`.
+So the safe new EMI is `₹0` and the absolute feasible ceiling is `₹0`.
 
 ## O3 — What rate?
 
 - Route: **Personal loan**
-- Fair rate band: **9.5%–16.5%**
-- All-in APR estimate: **0%–0%** because the borrower-safe amount is ₹0
-- Prototype processing fee: **2%**, ₹0 on the borrower-safe amount
+- Rate band: **9.5%–16.5%**
+- All-in APR estimate: **0%–0%** because the absolute feasible ceiling is ₹0
+- Prototype processing fee: **2%**, ₹0 on the absolute feasible ceiling
 
-The 780 score moves the personal-loan reference band down by 1.5 percentage points. The rate band is still illustrative. APR is not manufactured when there is no safe principal to benchmark.
+The 780 score moves the personal-loan reference band down by 1.5 percentage points. The rate band is illustrative. APR is not manufactured when there is no feasible principal to benchmark.
 
 ## O4 — What EMI?
 
 - Base safe EMI ceiling: **₹0/month**
+- Absolute feasible ceiling: **₹0**
 - Practical amount: **₹0**
 - Tenure used: **48 months**
 - Tenure trade-off: all displayed principal/interest values are ₹0 because the practical amount is ₹0
@@ -98,10 +100,11 @@ The stress case reinforces that the requested loan is not resilient. It does not
 
 The card should show:
 
-- Safe amount if the borrower revisits later: **₹0**
+- Absolute feasible ceiling: **₹0**
 - Lender-side estimate: **about ₹15.3L**
-- Fair rate: **9.5%–16.5%**
-- APR including fee: **0%–0%** because there is no borrower-safe principal
+- Borrower-safe amount: **₹0**
+- Rate: **9.5%–16.5%**
+- APR including fee: **0%–0%** because there is no feasible principal
 - EMI ceiling: **₹0/month**
 - Route: **Personal loan**
 - Verdict reason: the conservative borrower-safe calculation has no remaining EMI room after existing EMI, rent and the maintenance floor
