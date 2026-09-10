@@ -101,7 +101,7 @@ describe('Borrower Copilot domain rules', () => {
     expect(result.route.key).toBe('business')
   })
 
-  it('keeps the fair-rate benchmark honest without a hidden cap', () => {
+  it('keeps the rate benchmark honest without a hidden cap', () => {
     const result = evaluateBorrower(SAMPLE_BORROWERS.Anita)
     expect(result.rate.riskFlags).toEqual(['recent bounced payment', 'high-cost debt'])
     expect(result.rate.max).toBe(23)
@@ -120,12 +120,18 @@ describe('Borrower Copilot domain rules', () => {
     expect(result.decisionReason).toContain('lender-side estimate')
   })
 
-  it('reaches a real dont-borrow state for Anita', () => {
+  it('returns dont-borrow for Anita when severe debt risk is present', () => {
     const result = evaluateBorrower(SAMPLE_BORROWERS.Anita)
-    expect(result.decision).toBe('BORROW LESS')
-    expect(result.decisionReason).toContain('extreme systemic risk')
+    expect(result.decision).toBe('DON’T BORROW')
+    expect(result.decisionReason).toContain('high-cost debt')
     expect(result.rate.max).toBeGreaterThan(result.rate.min)
     expect(result.stress.survives).toBe(false)
+  })
+
+  it('calculates APR from the absolute feasible ceiling', () => {
+    const result = evaluateBorrower(SAMPLE_BORROWERS.Ravi)
+    expect(result.absoluteFeasibleCeiling).toBeCloseTo(result.safeAmount, 5)
+    expect(result.apr.fee).toBeCloseTo(result.absoluteFeasibleCeiling * RULES.processingFee, 5)
   })
 
   it('keeps age in the tenure calculation when a borrower is close to the age limit', () => {
@@ -141,11 +147,12 @@ describe('Borrower Copilot domain rules', () => {
     expect(result.tenureTradeoff.find((option) => option.months === 60).totalInterest).toBeGreaterThan(result.tenureTradeoff.find((option) => option.months === 48).totalInterest)
   })
 
-  it('does not invent an APR when safe capacity is zero', () => {
+  it('does not invent an APR when the absolute feasible ceiling is zero', () => {
     const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, housingType: 'own', monthlyRent: 0, existingEmi: 60000, expensesKnown: true, monthlyExpenses: 60000 })
-    expect(result.safeAmount).toBe(0)
+    expect(result.absoluteFeasibleCeiling).toBe(0)
     expect(result.apr.min).toBe(0)
     expect(result.apr.max).toBe(0)
+    expect(result.apr.fee).toBe(0)
   })
 
   it('never emits invalid values for missing income', () => {
