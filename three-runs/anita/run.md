@@ -57,10 +57,10 @@ Confidence: **Low** because income is variable, credit is unknown, household exp
 
 - Normalized income: **₹27,400/month** using the low + 35% of range rule
 - Estimated lender-side capacity: **about ₹3.5L**
-- Borrower-safe amount: **about ₹0.68L**
-- Absolute feasible ceiling: **about ₹0.68L**
+- Borrower-safe amount: **about ₹0.66L (₹66.2k)**
+- Absolute feasible ceiling: **about ₹0.66L (₹66.2k)**
 - Safe EMI ceiling: **₹2,410/month**
-- Practical amount: **about ₹0.68L**
+- Practical amount: **about ₹0.66L**
 
 These are mathematical capacity numbers only. The borrower should **not read them as proof that another loan is safe**. The base verdict is DON'T BORROW because the recent bounce and high-cost debt trigger the severe-debt guard.
 
@@ -71,7 +71,7 @@ The safe number uses the disclosed ₹7,500 maintenance floor because unknown ex
 - Route: **Two-wheeler loan**
 - Rate band: **14%–23%**
 - All-in APR estimate: **about 16.6%–27.5%**
-- Prototype processing fee: **2%**, about ₹1,352 on the absolute feasible ceiling
+- Prototype processing fee: **2%**, about ₹1,324 on the absolute feasible ceiling
 
 The base two-wheeler band is 11%–19%. Unknown credit adds +2 to +3 points and non-salaried income adds 1 point. The resulting 14%–23% band is the current illustrative rate benchmark.
 
@@ -82,8 +82,8 @@ APR is calculated only on the absolute feasible ceiling, so the fee and APR are 
 ## O4 — What EMI?
 
 - Base safe EMI ceiling: **₹2,410/month**
-- Absolute feasible ceiling: **about ₹0.68L**
-- Practical amount: **about ₹0.68L**
+- Absolute feasible ceiling: **about ₹0.66L**
+- Practical amount: **about ₹0.66L**
 - Tenure used: **36 months**
 - Tenure trade-off uses the practical amount at the 17% midpoint.
 - 24 months: about **₹3.3k EMI**, about **₹12.6k total interest**
@@ -100,10 +100,10 @@ The stress case is a resilience check. The base DON'T BORROW verdict comes from 
 
 The card should show:
 
-- Recommended amount: **about ₹0.68L**
+- Recommended amount: **about ₹0.66L**
 - Lender-side estimate: **about ₹3.5L**
-- Borrower-safe amount: **about ₹0.68L**
-- Absolute feasible ceiling: **about ₹0.68L**
+- Borrower-safe amount: **about ₹0.66L**
+- Absolute feasible ceiling: **about ₹0.66L**
 - Rate: **14%–23%**
 - APR including fee: **about 16.6%–27.5%**
 - EMI ceiling: **₹2,410/month**
