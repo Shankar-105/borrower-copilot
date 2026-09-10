@@ -41,53 +41,52 @@ The collateral question is not shown because this is not a secured/LAP case.
 
 **DON'T BORROW**
 
-The requested ₹1.5L is inside the mathematical borrower-safe amount, but Anita has high-cost debt and a recent bounced EMI. That combination triggers the debt-stress guard.
+Anita has high-cost debt and a recent bounced EMI. That combination triggers the debt-stress guard before the positive mathematical capacity can be used as a reason to take another loan.
 
 Confidence: **Low** because income is variable, credit is unknown and household expenses are not known.
 
 ## O2 — How much?
 
-- Estimated lender-side capacity: **about ₹3.3L**
-- Borrower-safe amount: **about ₹2.6L**
-- Safe EMI ceiling: **₹9,910/month**
+- Estimated lender-side capacity: **about ₹2.0L**
+- Borrower-safe amount: **about ₹1.2L**
+- Safe EMI ceiling: **about ₹4,550/month**
 
-These are mathematical capacity numbers. The borrower should **not use them as a reason to take another loan** because the debt-risk guard has already said DON'T BORROW.
+These are mathematical capacity numbers only. The borrower should **not use them as a reason to take another loan** because the debt-risk guard has already said DON'T BORROW.
+
+The safe number uses a disclosed 20% household-income expense proxy because unknown expenses are never treated as ₹0.
 
 ## O3 — What rate?
 
 - Route: **Two-wheeler loan**
-- Fair rate band: **17%–28%**
-- All-in APR estimate: **about 20.1%–33.9%**
-- Prototype processing fee: **2%**, about ₹5,155 on the safe amount
+- Fair rate band: **14%–20%**
+- All-in APR estimate: **about 17.0%–23.7%**
+- Prototype processing fee: **2%**, about ₹2,300 on the safe amount
 
-The base two-wheeler band is 11%–19%. Unknown credit, variable income, the recent bounce and high-cost debt all move the band upward or widen it.
+The base two-wheeler band is 11%–19%. Unknown credit adds +2 to +3 points and non-salaried income adds 1 point. The recent bounce and high-cost debt are shown as risk flags rather than stacked into an extreme fair-rate benchmark.
 
 ## O4 — What EMI?
 
-- Base safe EMI ceiling: **₹9,910/month**
+- Base safe EMI ceiling: **about ₹4,550/month**
 - Tenure used: **36 months**
-- Tenure trade-off on the safe amount at the 22.5% midpoint:
-  - 24 months: about **₹13.4k EMI**, about **₹64.7k total interest**
-  - 36 months: about **₹9.9k EMI**, about **₹99.0k total interest** — selected
-  - 48 months: about **₹8.2k EMI**, about **₹1.35L total interest**
 - Stress income after a 15% drop: **₹23,290/month**
-- Stressed safe EMI room: **₹8,266/month**
-- Requested ₹1.5L EMI at the stressed rate of 30%: **about ₹6,368/month**
-- Stress result: **Still carries**
+- Stressed safe household room remains constrained after existing EMI and the expense proxy
+- Requested ₹1.5L EMI is compared with that stressed room at the higher stress rate
+- Stress result: **Buffer breaks**
 
-The stress calculation alone survives, but the overall answer is still DON'T BORROW because the existing high-cost debt and recent bounce are more important for the current decision.
+The stress case is a resilience check. The base DON'T BORROW verdict comes from the existing high-cost debt plus recent bounce.
 
 ## Negotiation Card
 
 The card should show:
 
-- Recommended amount: **about ₹2.6L** as the mathematical safe ceiling
-- Fair rate: **17%–28%**
-- APR including fee: **about 20.1%–33.9%**
-- EMI ceiling: **₹9,910/month**
+- Recommended amount: **about ₹1.2L** as the mathematical safe ceiling
+- Fair rate: **14%–20%**
+- APR including fee: **about 17.0%–23.7%**
+- EMI ceiling: **about ₹4,550/month**
 - Route: **Two-wheeler loan**
-- Verdict reason: existing high-cost debt plus a recent bounce
+- Risk flags: recent bounce + high-cost debt
+- Verdict: **DON'T BORROW**
 
-The card should make the DON'T BORROW verdict clear even though the mathematical capacity number is positive.
+The card should make the DON'T BORROW verdict clear even though the mathematical capacity number is positive. The fair-rate band is a borrower benchmark, not a claim that Anita should accept a 20% loan.
 
 I will add the result/card screenshots in this folder.
