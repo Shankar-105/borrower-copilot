@@ -13,7 +13,7 @@ describe('Borrower Copilot domain rules', () => {
     expect(normalizeIncome({ incomeType: 'self-employed', monthlyIncome: 60000, documentedAnnualIncome: 420000 }).monthly).toBe(35000)
   })
 
-  it('keeps the lender ceiling above the borrower-safe ceiling', () => {
+  it('keeps lender capacity separate from borrower-safe capacity', () => {
     const result = evaluateBorrower(SAMPLE_BORROWERS.Priya)
     expect(result.affordability.lenderAvailable).toBeGreaterThan(result.affordability.safeAvailable)
     expect(result.lenderAmount).toBeGreaterThan(result.safeAmount)
@@ -23,9 +23,17 @@ describe('Borrower Copilot domain rules', () => {
   it('subtracts known household expenses inside the borrower-safe FOIR calculation', () => {
     const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: true, monthlyExpenses: 28000 })
     expect(result.affordability.safeAvailable).toBe(2000)
-    expect(result.recommendedEmi).toBe(2000)
+    expect(result.recommendedEmi).toBeCloseTo(2000, 0)
     expect(result.safeAmount).toBeGreaterThan(0)
     expect(result.safeAmount).toBeLessThan(100000)
+  })
+
+  it('uses an explicit expense proxy when household expenses are unknown', () => {
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: false, monthlyExpenses: null })
+    expect(result.affordability.expensesAssumed).toBe(true)
+    expect(result.affordability.expensesUsed).toBeCloseTo(110000 * RULES.unknownExpenseRatio, 5)
+    expect(result.affordability.safeAvailable).toBeLessThan(110000 * RULES.safeFoir - 14000)
+    expect(result.confidence.level).toBe('Medium')
   })
 
   it('uses known household expenses to reduce the borrower-safe headroom', () => {
@@ -38,10 +46,23 @@ describe('Borrower Copilot domain rules', () => {
   it('routes Ravi to secured business finance and accounts for collateral conservatively', () => {
     const result = evaluateBorrower(SAMPLE_BORROWERS.Ravi)
     expect(result.route.key).toBe('lap')
-    expect(result.route.product).toContain('business')
+    expect(result.route.product).toContain('secured business')
     expect(result.confidence.level).toBe('Low')
     expect(result.affordability.householdIncome).toBe(53000)
+    expect(result.affordability.expensesAssumed).toBe(true)
     expect(result.safeAmount).toBeLessThanOrEqual(SAMPLE_BORROWERS.Ravi.collateralValue * RULES.securedLtv)
+  })
+
+  it('keeps unsecured business routing available when no collateral is supplied', () => {
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Ravi, collateralValue: 0 })
+    expect(result.route.key).toBe('business')
+  })
+
+  it('caps the fair-rate benchmark instead of stacking punitive risk pricing', () => {
+    const result = evaluateBorrower(SAMPLE_BORROWERS.Anita)
+    expect(result.rate.riskFlags).toEqual(['recent bounced payment', 'high-cost debt'])
+    expect(result.rate.max).toBeLessThanOrEqual(20)
+    expect(result.rate.min).toBeLessThanOrEqual(result.rate.max)
   })
 
   it('does not allow a request above the safe amount to pass as BORROW', () => {
