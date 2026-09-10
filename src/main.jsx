@@ -7,22 +7,32 @@ const blank = { name: '', age: 0, city: '', purpose: 'wedding', loanType: 'not-s
 const asValue = (key, value) => {
   if (['expensesKnown', 'recentBounce', 'highCostDebt'].includes(key)) return value === 'true'
   if (key === 'creditScore' || key === 'monthlyExpenses') return value === '' ? null : Number(value)
-  if (['collateralValue', 'requestedAmount', 'monthlyIncome', 'incomeLow', 'incomeHigh', 'documentedAnnualIncome', 'existingEmi', 'otherHouseholdIncome', 'tenureMonths', 'age'].includes(key)) return value === '' ? 0 : Number(value)
+  if (['collateralValue', 'requestedAmount', 'monthlyIncome', 'incomeLow', 'incomeHigh', 'documentedAnnualIncome', 'existingEmi', 'otherHouseholdIncome', 'monthlyRent', 'tenureMonths', 'age'].includes(key)) return value === '' ? 0 : Number(value)
   return value
 }
 
 function QuestionField({ question, profile, update }) {
-  return <label className="field" key={question.id}><span>{question.label}{question.optional && <small> optional</small>}</span>{question.type === 'select' ? <select value={String(profile[question.id] ?? '')} onChange={(event) => update(question.id, event.target.value)}>{question.options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select> : <div className="input-wrap">{question.prefix && <b>{question.prefix}</b>}<input type="number" min={question.min ?? 0} max={question.max} value={profile[question.id] ?? ''} onChange={(event) => update(question.id, event.target.value)} placeholder="Not provided" />{question.suffix && <b>{question.suffix}</b>}</div>}<small className="affects">Affects {question.affects}</small></label>
+  const rentMissing = question.id === 'monthlyRent' && !(Number(profile.monthlyRent) > 0)
+  return <label className="field" key={question.id}><span>{question.label}{question.optional && <small> optional</small>}{question.required && <small> required</small>}</span>{question.type === 'select' ? <select value={String(profile[question.id] ?? '')} onChange={(event) => update(question.id, event.target.value)}>{question.options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select> : <div className="input-wrap">{question.prefix && <b>{question.prefix}</b>}<input type="number" min={question.min ?? 0} max={question.max} required={question.required} aria-invalid={rentMissing} value={profile[question.id] ?? ''} onChange={(event) => update(question.id, event.target.value)} placeholder="Enter monthly rent" />{question.suffix && <b>{question.suffix}</b>}</div>}{rentMissing && <small className="field-error">Enter your monthly rent to continue. Owned homes do not use this field.</small>}<small className="affects">Affects {question.affects}</small></label>
 }
 
 function App() {
   const [profile, setProfile] = useState(blank)
-  const [stage, setStage] = useState('intro')
+  const [stage, setStageState] = useState('intro')
   const result = useMemo(() => evaluateBorrower(profile), [profile])
   const visibleQuestions = QUESTION_DEFINITIONS.filter((question) => !question.visible || question.visible(profile))
   const mustQuestions = visibleQuestions.filter((question) => question.tier === 'must')
   const additionalQuestions = visibleQuestions.filter((question) => question.tier === 'additional')
-  const update = (key, value) => setProfile((current) => ({ ...current, [key]: asValue(key, value) }))
+  const update = (key, value) => setProfile((current) => {
+    const next = { ...current, [key]: asValue(key, value) }
+    if (key === 'housingType' && next.housingType === 'own') next.monthlyRent = 0
+    return next
+  })
+  const rentIsValid = profile.housingType !== 'rent' || Number(profile.monthlyRent) > 0
+  const setStage = (nextStage) => {
+    if (nextStage === 'result' && !rentIsValid) return
+    setStageState(nextStage)
+  }
   const loadSample = (name) => { setProfile({ ...blank, ...SAMPLE_BORROWERS[name] }); setStage('form') }
   const reset = () => { setProfile(blank); setStage('intro') }
 

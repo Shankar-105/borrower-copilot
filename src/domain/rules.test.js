@@ -8,16 +8,20 @@ describe('Borrower Copilot domain rules', () => {
     expect(calculateMaximumPrincipal(emi, 12, 48)).toBeCloseTo(800000, -1)
   })
 
-  it('normalizes variable income conservatively and documented self-employed income first', () => {
+  it('uses documented monthly income for self-employed borrowers when available', () => {
     expect(normalizeIncome({ incomeType: 'variable', incomeLow: 40000, incomeHigh: 80000 }).monthly).toBe(54000)
-    expect(normalizeIncome({ incomeType: 'self-employed', monthlyIncome: 60000, incomeLow: 40000, incomeHigh: 80000, documentedAnnualIncome: 420000 }).monthly).toBe(89000)
+    expect(normalizeIncome({ incomeType: 'self-employed', monthlyIncome: 60000, incomeLow: 40000, incomeHigh: 80000, documentedAnnualIncome: 420000 }).monthly).toBe(35000)
+  })
+
+  it('uses the stable range for self-employed borrowers without documented income', () => {
+    expect(normalizeIncome({ incomeType: 'self-employed', incomeLow: 40000, incomeHigh: 80000, documentedAnnualIncome: 0 }).monthly).toBe(54000)
   })
 
   it('keeps lender capacity separate from borrower-safe capacity', () => {
     const result = evaluateBorrower(SAMPLE_BORROWERS.Priya)
     expect(result.affordability.lenderAvailable).toBeGreaterThan(result.affordability.safeAvailable)
     expect(result.lenderAmount).toBeGreaterThan(result.safeAmount)
-    expect(result.decision).toBe('BORROW LESS')
+    expect(result.decision).toBe('DON’T BORROW')
   })
 
   it('subtracts known household expenses inside the borrower-safe FOIR calculation', () => {
@@ -26,6 +30,32 @@ describe('Borrower Copilot domain rules', () => {
     expect(result.recommendedEmi).toBeCloseTo(2000, 0)
     expect(result.safeAmount).toBeGreaterThan(0)
     expect(result.safeAmount).toBeLessThan(100000)
+  })
+
+  it('enforces the maintenance floor when known expenses are entered below it', () => {
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, housingType: 'own', monthlyRent: 0, expensesKnown: true, monthlyExpenses: 0 })
+    expect(result.affordability.generalMaintenance).toBe(RULES.minimumExpenseFloor)
+    expect(result.affordability.monthlyExpenses).toBe(RULES.minimumExpenseFloor)
+    expect(result.affordability.expensesAssumed).toBe(true)
+  })
+
+  it('requires rent for renters instead of treating missing rent as zero', () => {
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Ravi, housingType: 'rent', monthlyRent: 0 })
+    expect(result.affordability.rentMissing).toBe(true)
+    expect(result.affordability.rentObligation).toBe(0)
+    expect(result.affordability.safeAvailable).toBe(0)
+  })
+
+  it('uses zero rent for owned homes regardless of stale rent input', () => {
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Ravi, housingType: 'own', monthlyRent: 28000 })
+    expect(result.affordability.rentMissing).toBe(false)
+    expect(result.affordability.rentObligation).toBe(0)
+  })
+
+  it('sizes the recommended EMI to the requested principal within the feasible ceiling', () => {
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, housingType: 'own', monthlyRent: 0, expensesKnown: false, requestedAmount: 50000 })
+    expect(result.recommendedEmi).toBeCloseTo(calculateEmi(50000, (result.rate.min + result.rate.max) / 2, result.tenure), 5)
+    expect(result.recommendedEmi).toBeLessThan(result.affordability.safeAvailable)
   })
 
   it('uses an explicit minimum expense floor when household expenses are unknown', () => {
@@ -48,7 +78,7 @@ describe('Borrower Copilot domain rules', () => {
     expect(result.route.key).toBe('lap')
     expect(result.route.product).toContain('secured business')
     expect(result.confidence.level).toBe('Low')
-    expect(result.affordability.householdIncome).toBe(107000)
+    expect(result.affordability.householdIncome).toBe(53000)
     expect(result.affordability.expensesAssumed).toBe(true)
     expect(result.safeAmount).toBeLessThanOrEqual(SAMPLE_BORROWERS.Ravi.collateralValue * RULES.securedLtv)
   })

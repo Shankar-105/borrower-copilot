@@ -12,13 +12,13 @@ This is a borrower self-assessment, not a lender approval model. The goal is tha
 | Stress income drop | 15% | Tests a lower-income month | My judgement |
 | Stress rate increase | 2 pp | Tests a higher-rate case | My judgement |
 | Stress expense reduction | 10% | Allows limited variable-spend adjustment under stress without pretending all expenses disappear | My judgement |
-| Unknown expense proxy | 20% of household income | Unknown is never treated as ₹0; this creates a disclosed conservative planning baseline | My judgement |
+| Minimum maintenance floor | ₹7,500/month | Unknown or implausibly low maintenance is never treated as ₹0; rent is counted separately | My judgement |
 | Fair-rate cap buffer | +1 pp over route base maximum | A borrower negotiation benchmark should not become a lender worst-case price; adverse risk is surfaced separately | My judgement |
 | Tenure | 12–84 months | Keeps the prototype in a normal range | My judgement |
 | Age limit | 60 years | Limits repayment horizon in this prototype | My judgement |
 | Secured LTV cap | 50% | Collateral is an upper cap, not a replacement for income affordability | My judgement |
 | Variable income | Low + 35% of range | Does not treat the best month as normal income | My judgement |
-| Self-employed cash | 70% of cash when no ITR is available | Reduces reliance on undocumented cash income | My judgement |
+| Self-employed income source | Documented annual income / 12 when available; otherwise stable cash-range baseline | Uses one income basis and prevents ITR income and operating cash from being double-counted | My judgement |
 
 The FOIR, LTV, fee, rate bands and stress values are prototype assumptions. They are not universal RBI rules or lender promises.
 
@@ -46,7 +46,7 @@ This is intentionally different from silently assuming the spouse is a co-borrow
 
 If ITR is available:
 
-`normalized income = documented annual income / 12`
+`normalized income = documented annual income / 12` when ITR income is available; otherwise use `low + 35% × (high - low)`
 
 Otherwise:
 
@@ -74,19 +74,21 @@ Borrower-safe household capacity can use both incomes:
 
 If household expenses are known:
 
-`safeAvailable = max(0, safeTotal - E - X)`
+`safeAvailable = max(0, safeTotal - E - rent - max(X, ₹7,500))`
 
-If household expenses are unknown, the model **does not use zero**. It uses a disclosed planning proxy:
+If household expenses are unknown, the model **does not use zero**. It uses a disclosed minimum maintenance floor of ₹7,500, in addition to rent when applicable:
 
-`assumedExpenses = householdIncome × 20%`
+`assumedExpenses = rent + ₹7,500`
 
 `safeAvailable = max(0, safeTotal - E - assumedExpenses)`
+
+Housing is asked before rent. Owned homes always use `rent = ₹0`; renters must provide a positive monthly rent. A missing renter rent value blocks borrower-safe capacity rather than being treated as free housing.
 
 This makes silence widen uncertainty rather than manufacture affordability. The proxy is explicitly labelled as a judgement and is not presented as the borrower's actual spending.
 
 ### Priya example
 
-For Priya, if the borrower enters ₹28,000 as monthly household expenses:
+For Priya, if the borrower enters ₹28,000 as monthly maintenance expenses:
 
 `₹1,10,000 × 40% = ₹44,000 safe FOIR ceiling`
 
@@ -166,7 +168,7 @@ The stress case is shown separately. A failed stress case does not automatically
 - Requested EMI is compared with stressed safe monthly room.
 - Other household income remains as separately supplied rather than being silently stress-reduced.
 - Known household expenses remain in the stressed safe-FOIR calculation, but the model reduces the expense load by 10% to represent limited variable-spend adjustment.
-- Unknown expenses use the same disclosed proxy, also reduced by 10% under stress.
+- The ₹7,500 maintenance floor is also reduced by 10% under stress.
 
 ## APR
 
@@ -180,7 +182,7 @@ This is an illustrative APR for the fee model in this prototype, not a full lend
 
 Confidence falls when credit is unknown, income is non-salaried, expenses are unknown, a bounce exists, or age is unknown.
 
-Unknown is never treated as zero. Unknown credit stays unknown and widens the rate band. Unknown expenses use a visible proxy and lower confidence.
+Unknown is never treated as zero. Unknown credit stays unknown and widens the rate band. Unknown expenses use the visible maintenance floor and lower confidence.
 
 ## Three challenge borrowers
 
@@ -188,10 +190,10 @@ Unknown is never treated as zero. Unknown credit stays unknown and widens the ra
 
 - ₹1.10L net salary, ₹14k existing EMI, credit score 780.
 - ₹8L wedding request.
-- Challenge gives ₹28k rent. In the written run, that ₹28k is entered as the known household-expense input to exercise the expense rule.
-- With ₹28k expenses, safe new EMI is `₹44k - ₹14k - ₹28k = ₹2k`.
+- Challenge gives ₹28k rent. Rent is counted separately, and a known maintenance input below ₹7,500 is raised to the protective floor.
+- With zero maintenance entered, safe new EMI is `max(0, ₹44k - ₹14k - ₹28k - ₹7.5k) = ₹0`.
 - The practical amount is therefore far below the ₹8L request.
-- Verdict: BORROW LESS.
+- Verdict: DON'T BORROW.
 
 ### Ravi
 
@@ -199,9 +201,9 @@ Unknown is never treated as zero. Unknown credit stays unknown and widens the ra
 - Wife earns ₹18k/month.
 - ₹0 existing EMI, unknown credit, ₹45L unencumbered shop.
 - ₹15L business request.
-- ITR gives normalized borrower income of ₹35k/month.
+- Documented ITR income is used as ₹35k/month; the operating cash range is not added on top.
 - Wife's ₹18k is added only to borrower-safe household capacity.
-- Unknown household expenses use the disclosed 20% proxy rather than zero.
+- Unknown household expenses use the disclosed ₹7,500 maintenance floor rather than zero.
 - Lender-side capacity remains based on Ravi's documented income.
 - Secured route and ₹22.5L collateral cap apply.
 - Verdict: BORROW LESS.

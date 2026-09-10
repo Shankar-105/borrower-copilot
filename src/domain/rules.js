@@ -34,9 +34,10 @@ export function normalizeIncome(profile) {
   const low = safeNumber(profile.incomeLow) || monthly
   const high = safeNumber(profile.incomeHigh) || low
   const rangeBase = low + (high - low) * RULES.variableIncomeShare
-  const normalized = documentedBase + rangeBase
-  const method = documentedBase > 0
-    ? `${formatInr(documentedBase)} of monthly tax-record income plus ${formatInr(rangeBase)} from the stable monthly business range is used; peak cash months are not treated as normal income.`
+  const hasDocumentedIncome = profile.incomeType === 'self-employed' && documentedBase > 0
+  const normalized = hasDocumentedIncome ? documentedBase : rangeBase
+  const method = hasDocumentedIncome
+    ? `${formatInr(documentedBase)} of monthly tax-record income is used because documented annual income is available; operating cash is not added on top.`
     : `${formatInr(rangeBase)} from the stable monthly income range (${formatInr(low)}–${formatInr(high)}) is used; peak months are not treated as normal income.`
   return { monthly: normalized, method }
 }
@@ -72,14 +73,17 @@ function affordability(profile, income, otherHouseholdIncome = 0, options = {}) 
   const lenderAvailable = Math.max(0, lenderTotal - existingEmi)
   const householdIncome = Math.max(0, income + safeNumber(otherHouseholdIncome))
   const safeTotal = householdIncome * RULES.safeFoir
-  const rentObligation = profile.housingType === 'rent' ? Math.max(0, safeNumber(profile.monthlyRent)) : 0
+  const rentRequired = profile.housingType === 'rent'
+  const rentObligation = rentRequired ? Math.max(0, safeNumber(profile.monthlyRent)) : 0
+  const rentMissing = rentRequired && rentObligation <= 0
   const expensesComplete = profile.expensesKnown === true && Number.isFinite(Number(profile.monthlyExpenses))
-  const knownExpenses = expensesComplete ? Math.max(0, Number(profile.monthlyExpenses)) : null
-  const generalMaintenance = expensesComplete ? knownExpenses : RULES.minimumExpenseFloor
+  const enteredExpenses = expensesComplete ? Math.max(0, Number(profile.monthlyExpenses)) : null
+  const knownExpenses = enteredExpenses == null ? null : Math.max(RULES.minimumExpenseFloor, enteredExpenses)
+  const generalMaintenance = knownExpenses ?? RULES.minimumExpenseFloor
   const assumedExpenses = rentObligation + generalMaintenance
   const expenseReduction = options.stress ? clamp(RULES.stressExpenseReduction, 0, 1) : 0
   const expensesUsed = assumedExpenses * (1 - expenseReduction)
-  const safeAvailable = Math.max(0, safeTotal - existingEmi - expensesUsed)
+  const safeAvailable = rentMissing ? 0 : Math.max(0, safeTotal - existingEmi - expensesUsed)
   return {
     existingEmi,
     lenderTotal,
@@ -88,9 +92,10 @@ function affordability(profile, income, otherHouseholdIncome = 0, options = {}) 
     safeAvailable,
     monthlyExpenses: knownExpenses,
     rentObligation,
+    rentMissing,
     generalMaintenance,
     expensesUsed,
-    expensesAssumed: !expensesComplete,
+    expensesAssumed: !expensesComplete || enteredExpenses < RULES.minimumExpenseFloor,
     householdIncome,
     otherHouseholdIncome: Math.max(0, safeNumber(otherHouseholdIncome)),
   }
@@ -202,17 +207,28 @@ export function evaluateBorrower(profile) {
   const lenderIncomeAmount = calculateMaximumPrincipal(affordabilityResult.lenderAvailable, averageRate, tenure)
   const lenderAmount = route.key === 'lap' ? Math.min(lenderIncomeAmount, collateralCap) : lenderIncomeAmount
   const safeAmount = calculateMaximumPrincipal(affordabilityResult.safeAvailable, averageRate, tenure)
-  const recommendedEmi = affordabilityResult.safeAvailable
   const requested = Math.max(0, safeNumber(profile.requestedAmount))
+  const absoluteFeasibleCeiling = Math.min(lenderAmount, safeAmount)
+  const targetPrincipal = Math.min(requested, absoluteFeasibleCeiling)
+  const recommendedEmi = calculateEmi(targetPrincipal, averageRate, tenure)
   const stressIncome = normalized.monthly * (1 - RULES.stressIncomeDrop)
   const stressAffordability = affordability(profile, stressIncome, otherHouseholdIncome, { stress: true })
   const stressRateIncrease = route.key === 'lap' ? RULES.stressRateIncrease : 0
   const stressEmi = calculateEmi(requested, rate.max + stressRateIncrease * 100, tenure)
   const stress = { income: stressIncome, householdIncome: stressAffordability.householdIncome, safeAvailable: stressAffordability.safeAvailable, expensesUsed: stressAffordability.expensesUsed, requestedEmi: stressEmi, survives: stressEmi <= stressAffordability.safeAvailable }
   const severeDebt = profile.highCostDebt === true && profile.recentBounce === true
-  const productiveDebtWarning = severeDebt && (route.key === 'twoWheeler' || route.key === 'business')
+  const productiveRouteSignals = [profile.purpose, profile.loanType, route.key, route.product]
+    .map((value) => String(value ?? '').toLowerCase().replace(/[\s_-]+/g, ''))
+  const productiveDebtWarning = severeDebt && [
+    'vehicle',
+    'twowheeler',
+    'vehiclefinance',
+    'scooter',
+    'electricscooter',
+    'business',
+    'securedbusinessloan',
+  ].some((signal) => productiveRouteSignals.some((value) => value.includes(signal)))
   const noCapacity = affordabilityResult.safeAvailable <= 0
-  const absoluteFeasibleCeiling = Math.min(lenderAmount, safeAmount)
   const exceedsSafeCapacity = requested > safeAmount
   const exceedsLenderCapacity = requested > lenderAmount
   const requestedTooHigh = requested > absoluteFeasibleCeiling
@@ -273,7 +289,7 @@ export function evaluateBorrower(profile) {
     recommendedEmi,
     tenure,
     tenureTradeoff,
-    explanation: [`Say: "I can carry an EMI of ${formatInr(affordabilityResult.safeAvailable)}; please show me the offer without crossing that ceiling."`, `Say: "Your estimated lender-side capacity is ${formatLakhs(lenderAmount)}, but my borrower-safe ceiling is ${formatLakhs(safeAmount)}; I will negotiate from the safer figure."`, `Say: "My existing EMI of ${formatInr(affordabilityResult.existingEmi)} is already committed, so it cannot be counted as new-loan capacity."`, householdIncomeNote, expenseNote, leverageNote, stressExpenseNote, tenureNote, route.reason],
+    explanation: [`Say: "I can carry a contractual EMI of ${formatInr(recommendedEmi)} for this request; please show me the offer without crossing that ceiling."`, `Say: "Your estimated lender-side capacity is ${formatLakhs(lenderAmount)}, but my borrower-safe ceiling is ${formatLakhs(safeAmount)}; I will negotiate from the safer figure."`, `Say: "My existing EMI of ${formatInr(affordabilityResult.existingEmi)} is already committed, so it cannot be counted as new-loan capacity."`, normalized.method, householdIncomeNote, expenseNote, leverageNote, stressExpenseNote, tenureNote, route.reason],
   }
 }
 
@@ -294,8 +310,8 @@ export const QUESTION_DEFINITIONS = [
   { id: 'documentedAnnualIncome', label: 'Annual documented income (ITR)', type: 'number', prefix: '₹', visible: (profile) => profile.incomeType === 'self-employed', affects: 'normalization, confidence', tier: 'additional' },
   { id: 'existingEmi', label: 'Existing monthly EMIs', type: 'number', prefix: '₹', affects: 'affordability, decision', tier: 'must' },
   { id: 'otherHouseholdIncome', label: 'Other household income you expect to rely on', type: 'number', prefix: '₹', visible: (profile) => profile.incomeType !== 'salaried', optional: true, affects: 'safe amount, stress', tier: 'additional' },
-  { id: 'housingType', label: 'Do you own your home or rent?', type: 'select', options: [['own', 'Own House'], ['rent', 'Rented']], affects: 'safe amount, confidence', tier: 'must' },
-  { id: 'monthlyRent', label: 'Monthly rent', type: 'number', prefix: '₹', visible: (profile) => profile.housingType === 'rent', affects: 'safe amount, confidence', tier: 'must' },
+  { id: 'housingType', label: 'Do you own your home or rent?', type: 'select', options: [['own', 'Own House'], ['rent', 'Rent']], affects: 'safe amount, confidence', tier: 'must' },
+  { id: 'monthlyRent', label: 'Monthly rent', type: 'number', prefix: '₹', min: 1, required: true, visible: (profile) => profile.housingType === 'rent', affects: 'safe amount, confidence', tier: 'must' },
   { id: 'monthlyExpenses', label: 'Monthly general maintenance, excluding rent and EMIs', type: 'number', prefix: '₹', visible: (profile) => profile.expensesKnown === true, affects: 'safe amount, confidence', tier: 'must' },
   { id: 'expensesKnown', label: 'Do you know your monthly household expenses?', type: 'select', options: [['true', 'Yes'], ['false', 'Not yet']], affects: 'safe amount, confidence', tier: 'must' },
   { id: 'age', label: 'Your age', type: 'number', min: 18, max: 80, affects: 'tenure, confidence', tier: 'must' },
