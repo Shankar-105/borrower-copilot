@@ -29,7 +29,7 @@ npm test
 npm run build
 ```
 
-The main domain logic is in `src/domain/rules.js` and is separate from the React UI.
+The main domain logic is in [_`src/domain/rules.js`_](./src/domain/rules.js) and is separate from the React UI.
 
 ## What is in the app
 
@@ -61,25 +61,10 @@ See `three-runs/` for the written run-throughs. Add the screenshots from the act
 
 ## Rules
 
-See `RULES.md` for the full table of thresholds, bands, formulas, reasons and limits.
+See [`RULES.md`](./RULES.md) for the full table of thresholds, bands, formulas, reasons and limits.
 
 Important: the rate bands, FOIR, LTV, processing fee, expense proxy and stress values are prototype judgements. They are not promises from any lender and are not presented as universal RBI rules.
 
 ## Five-minute walkthrough
 
-`WALKTHROUGH.md` contains the written walkthrough for the challenge. It covers the product, the three borrowers, the rule structure, what I would build next and what I would cut.
-
-## Submission checklist
-
-- [x] Working local app
-- [x] `RULES.md`
-- [x] Three written run-throughs in `three-runs/`
-- [x] Negotiation Card in the result screen
-- [x] Written five-minute walkthrough in `WALKTHROUGH.md`
-- [ ] Add Priya screenshots
-- [ ] Add Ravi screenshots
-- [ ] Add Anita screenshots
-
-## Limits
-
-This is a planning tool, not an approval system. It does not know the actual bureau report, lender underwriting rules, verified income or expenses, whether another household earner is a formal co-applicant, exact collateral value, lender rate card, or full KFS terms. The borrower should compare the actual lender quote and KFS with the card.
+[`WALKTHROUGH.md`](./WALKTHROUGH.md) contains the written walkthrough for the challenge. It covers the product, the three borrowers, the rule structure, what I would build next and what I would cut.

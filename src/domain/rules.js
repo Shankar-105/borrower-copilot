@@ -5,8 +5,7 @@ export const RULES = {
   stressIncomeDrop: 0.15,
   stressRateIncrease: 0.02,
   stressExpenseReduction: 0.1,
-  unknownExpenseRatio: 0.2,
-  fairRateCapBuffer: 1,
+  minimumExpenseFloor: 7500,
   defaultTenureMonths: 48,
   minTenureMonths: 12,
   maxTenureMonths: 84,
@@ -14,6 +13,7 @@ export const RULES = {
   securedLtv: 0.5,
   variableIncomeShare: 0.35,
   selfEmployedCashHaircut: 0.7,
+  selfEmployedCashShare: 0.3,
 }
 
 const RATE_BASE = {
@@ -34,9 +34,14 @@ export function normalizeIncome(profile) {
   if (profile.incomeType === 'salaried') return { monthly, method: 'Full net salary is used because it is recurring income.' }
   if (profile.incomeType === 'self-employed') {
     const documented = safeNumber(profile.documentedAnnualIncome) / 12
-    const cash = monthly || safeNumber(profile.incomeLow)
-    const normalized = documented > 0 ? documented : cash * RULES.selfEmployedCashHaircut
-    return { monthly: normalized, method: `${formatInr(normalized)} is used from documented income first; cash income is not treated as fully reliable.` }
+    const cashFloor = safeNumber(profile.incomeLow) || monthly
+    const normalized = documented > 0
+      ? documented + cashFloor * RULES.selfEmployedCashShare
+      : cashFloor * RULES.selfEmployedCashHaircut
+    const method = documented > 0
+      ? `${formatInr(documented)} of monthly documented income plus ${formatInr(cashFloor * RULES.selfEmployedCashShare)} of the stable cash-income floor is used; the full cash range is not treated as reliable.`
+      : `${formatInr(normalized)} uses a ${RULES.selfEmployedCashHaircut * 100}% haircut on the stable cash-income floor because documented income is unavailable.`
+    return { monthly: normalized, method }
   }
   const low = safeNumber(profile.incomeLow) || monthly
   const high = safeNumber(profile.incomeHigh) || low
@@ -76,7 +81,7 @@ function affordability(profile, income, otherHouseholdIncome = 0, options = {}) 
   const safeTotal = householdIncome * RULES.safeFoir
   const expensesComplete = profile.expensesKnown === true && Number.isFinite(Number(profile.monthlyExpenses))
   const knownExpenses = expensesComplete ? Math.max(0, Number(profile.monthlyExpenses)) : null
-  const assumedExpenses = expensesComplete ? knownExpenses : householdIncome * RULES.unknownExpenseRatio
+  const assumedExpenses = expensesComplete ? knownExpenses : RULES.minimumExpenseFloor
   const expenseReduction = options.stress ? clamp(RULES.stressExpenseReduction, 0, 1) : 0
   const expensesUsed = assumedExpenses * (1 - expenseReduction)
   const safeAvailable = Math.max(0, safeTotal - existingEmi - expensesUsed)
@@ -121,7 +126,6 @@ function rateBand(profile, route) {
   const riskFlags = []
   if (profile.recentBounce) riskFlags.push('recent bounced payment')
   if (profile.highCostDebt) riskFlags.push('high-cost debt')
-  max = Math.min(max, baseMax + RULES.fairRateCapBuffer)
   min = Math.min(min, max)
 
   const confidence = credit.known && !profile.recentBounce && !profile.highCostDebt ? 'Medium-high' : credit.known ? 'Medium' : 'Low'
@@ -160,7 +164,7 @@ function confidence(profile, normalized) {
   if (!expensesComplete) score -= 1
   if (profile.recentBounce) score -= 1
   if (!safeNumber(profile.age)) score -= 1
-  return { level: score >= 3 ? 'High' : score >= 2 ? 'Medium' : 'Low', score, reason: `${profile.creditScore == null ? 'Credit history is unavailable. ' : ''}${profile.incomeType !== 'salaried' ? 'Income is variable or partly undocumented. ' : ''}${!expensesComplete ? `Household expenses are unknown, so a ${RULES.unknownExpenseRatio * 100}% household-income proxy is used. ` : ''}${!safeNumber(profile.age) ? 'Age is unavailable. ' : ''}${profile.recentBounce ? 'A recent bounce makes the risk picture less settled. ' : ''}${profile.highCostDebt ? 'High-cost debt is present. ' : ''}${`Income was normalized to ${formatInr(normalized.monthly)}.`}`.trim() }
+  return { level: score >= 3 ? 'High' : score >= 2 ? 'Medium' : 'Low', score, reason: `${profile.creditScore == null ? 'Credit history is unavailable. ' : ''}${profile.incomeType !== 'salaried' ? 'Income is variable or partly undocumented. ' : ''}${!expensesComplete ? `Household expenses are unknown, so a ${formatInr(RULES.minimumExpenseFloor)} monthly baseline floor is used. ` : ''}${!safeNumber(profile.age) ? 'Age is unavailable. ' : ''}${profile.recentBounce ? 'A recent bounce makes the risk picture less settled. ' : ''}${profile.highCostDebt ? 'High-cost debt is present. ' : ''}${`Income was normalized to ${formatInr(normalized.monthly)}.`}`.trim() }
 }
 
 function buildTenureTradeoff(principal, annualRate, tenure, maximumTenure) {
@@ -192,43 +196,45 @@ export function evaluateBorrower(profile) {
   const tenure = allowedTenure(profile)
   const collateralCap = safeNumber(profile.collateralValue) * RULES.securedLtv
   const lenderIncomeAmount = calculateMaximumPrincipal(affordabilityResult.lenderAvailable, averageRate, tenure)
-  const lenderAmount = route.key === 'lap' && collateralCap > 0 ? Math.min(lenderIncomeAmount, collateralCap) : lenderIncomeAmount
-  const incomeSafeAmount = calculateMaximumPrincipal(affordabilityResult.safeAvailable, averageRate, tenure)
-  const safe = Math.min(incomeSafeAmount, route.key === 'lap' && collateralCap > 0 ? collateralCap : incomeSafeAmount)
-  const practicalAmount = Math.min(lenderAmount, safe)
-  const recommendedEmi = practicalAmount < incomeSafeAmount
-    ? calculateEmi(practicalAmount, averageRate, tenure)
-    : affordabilityResult.safeAvailable
+  const lenderAmount = route.key === 'lap' ? Math.min(lenderIncomeAmount, collateralCap) : lenderIncomeAmount
+  const safeAmount = calculateMaximumPrincipal(affordabilityResult.safeAvailable, averageRate, tenure)
+  const recommendedEmi = affordabilityResult.safeAvailable
   const requested = Math.max(0, safeNumber(profile.requestedAmount))
   const stressIncome = normalized.monthly * (1 - RULES.stressIncomeDrop)
   const stressAffordability = affordability(profile, stressIncome, otherHouseholdIncome, { stress: true })
-  const stressEmi = calculateEmi(requested, rate.max + RULES.stressRateIncrease * 100, tenure)
+  const stressRateIncrease = route.key === 'lap' ? RULES.stressRateIncrease : 0
+  const stressEmi = calculateEmi(requested, rate.max + stressRateIncrease * 100, tenure)
   const stress = { income: stressIncome, householdIncome: stressAffordability.householdIncome, safeAvailable: stressAffordability.safeAvailable, expensesUsed: stressAffordability.expensesUsed, requestedEmi: stressEmi, survives: stressEmi <= stressAffordability.safeAvailable }
   const severeDebt = profile.highCostDebt === true && profile.recentBounce === true
   const noCapacity = affordabilityResult.safeAvailable <= 0
-  const requestedTooHigh = requested > practicalAmount
+  const requestedTooHigh = requested > safeAmount
   const decision = severeDebt || noCapacity ? 'DON’T BORROW' : requestedTooHigh ? 'BORROW LESS' : 'BORROW'
-  const decisionReason = severeDebt ? 'Existing high-cost debt and a recent bounce mean new borrowing could deepen the debt problem.' : noCapacity ? 'The conservative monthly headroom is already used by existing commitments and household costs.' : requestedTooHigh ? `The request is above the practical amount of ${formatLakhs(practicalAmount)} that is both affordable and within the lender-side estimate.` : 'The request fits inside both the lender-side estimate and the conservative household ceiling.'
-  const aprLow = calculateApr(practicalAmount, rate.min, tenure).apr
-  const aprHigh = calculateApr(practicalAmount, rate.max, tenure).apr
-  const aprFee = practicalAmount * RULES.processingFee
+  const decisionReason = severeDebt ? 'Existing high-cost debt and a recent bounce mean new borrowing could deepen the debt problem.' : noCapacity ? 'The conservative monthly headroom is already used by existing commitments and household costs.' : requestedTooHigh ? `The request is above the borrower-safe amount of ${formatLakhs(safeAmount)}.` : 'The request fits inside the conservative borrower-safe ceiling.'
+  const aprLow = calculateApr(safeAmount, rate.min, tenure).apr
+  const aprHigh = calculateApr(safeAmount, rate.max, tenure).apr
+  const aprFee = safeAmount * RULES.processingFee
   const age = safeNumber(profile.age)
   const maximumTenure = age ? Math.max(RULES.minTenureMonths, Math.min(RULES.maxTenureMonths, (RULES.retirementAge - age) * 12)) : RULES.maxTenureMonths
-  const tenureTradeoff = buildTenureTradeoff(practicalAmount, averageRate, tenure, maximumTenure)
+  const tenureTradeoff = buildTenureTradeoff(safeAmount, averageRate, tenure, maximumTenure)
   const tenureNote = age && tenure < safeNumber(profile.tenureMonths, tenure) ? `Tenure is limited to ${tenure} months using the ${RULES.retirementAge}-year age assumption.` : `Tenure used is ${tenure} months.`
   const expenseNote = affordabilityResult.monthlyExpenses != null
     ? `Known household expenses of ${formatInr(affordabilityResult.monthlyExpenses)} are subtracted from the ${RULES.safeFoir * 100}% FOIR ceiling after existing EMIs, leaving ${formatInr(affordabilityResult.safeAvailable)} for a new EMI.`
-    : `Household expenses are unknown, so the model uses a ${RULES.unknownExpenseRatio * 100}% household-income expense proxy (${formatInr(affordabilityResult.expensesUsed)}) instead of treating unknown as ₹0.`
+    : `Household expenses are unknown, so the model uses a ${formatInr(RULES.minimumExpenseFloor)} monthly baseline (${formatInr(affordabilityResult.expensesUsed)}) instead of treating unknown as ₹0.`
   const householdIncomeNote = otherHouseholdIncome > 0 ? `${formatInr(otherHouseholdIncome)} of other household income is included in the borrower-safe household calculation, but not in lender-side sanction capacity.` : 'No other household income is included in the safe household calculation.'
-  const stressExpenseNote = `Stress uses ${formatInr(stressAffordability.expensesUsed)} of household expenses, reduced by ${RULES.stressExpenseReduction * 100}% to represent limited variable-spend adjustment rather than assuming every expense is fixed.`
+  const stressExpenseNote = `Stress uses ${formatInr(stressAffordability.expensesUsed)} of household expenses, reduced by ${RULES.stressExpenseReduction * 100}% to represent limited variable-spend adjustment rather than assuming every expense is fixed. ${route.key === 'lap' ? `The secured route also tests a ${RULES.stressRateIncrease * 100}-point rate rise.` : 'The selected fixed-rate route does not assume a contractual rate rise.'}`
+  const leverageNote = route.key === 'lap' && collateralCap > 0
+    ? `Your unencumbered collateral supports a lender-side cap of ${formatLakhs(collateralCap)}; ask the lender to explain any quote above the ${formatPercent(rate.min)}–${formatPercent(rate.max)} benchmark.`
+    : profile.creditScore >= 750
+      ? `Your stated ${profile.creditScore} credit score supports asking for the lower end of the ${formatPercent(rate.min)}–${formatPercent(rate.max)} benchmark.`
+      : `Use the ${formatLakhs(safeAmount)} borrower-safe amount as your ceiling, even if a lender offers more.`
   return {
     normalized,
     affordability: affordabilityResult,
     route,
     rate,
     lenderAmount,
-    safeAmount: safe,
-    practicalAmount,
+    safeAmount,
+    collateralCap,
     requested,
     decision,
     decisionReason,
@@ -238,7 +244,7 @@ export function evaluateBorrower(profile) {
     recommendedEmi,
     tenure,
     tenureTradeoff,
-    explanation: [normalized.method, `Existing EMI of ${formatInr(affordabilityResult.existingEmi)} is counted before new borrowing.`, `Safe headroom is ${formatInr(affordabilityResult.safeAvailable)} after applying the ${RULES.safeFoir * 100}% borrower-safe FOIR rule.`, householdIncomeNote, `Practical amount is the lower of lender-side capacity (${formatLakhs(lenderAmount)}) and borrower-safe capacity (${formatLakhs(safe)}).`, expenseNote, stressExpenseNote, tenureNote, route.reason],
+    explanation: [normalized.method, `Tell the lender your existing EMI of ${formatInr(affordabilityResult.existingEmi)} is already committed before any new loan.`, `Your borrower-safe EMI ceiling is ${formatInr(affordabilityResult.safeAvailable)} under the ${RULES.safeFoir * 100}% safety rule; do not negotiate above it.`, `The lender-side estimate is ${formatLakhs(lenderAmount)}, while your safer amount is ${formatLakhs(safeAmount)}; use the safer number for your decision.`, householdIncomeNote, expenseNote, leverageNote, stressExpenseNote, tenureNote, route.reason],
   }
 }
 

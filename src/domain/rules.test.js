@@ -10,7 +10,7 @@ describe('Borrower Copilot domain rules', () => {
 
   it('normalizes variable income conservatively and documented self-employed income first', () => {
     expect(normalizeIncome({ incomeType: 'variable', incomeLow: 40000, incomeHigh: 80000 }).monthly).toBe(54000)
-    expect(normalizeIncome({ incomeType: 'self-employed', monthlyIncome: 60000, documentedAnnualIncome: 420000 }).monthly).toBe(35000)
+    expect(normalizeIncome({ incomeType: 'self-employed', monthlyIncome: 60000, incomeLow: 40000, documentedAnnualIncome: 420000 }).monthly).toBe(47000)
   })
 
   it('keeps lender capacity separate from borrower-safe capacity', () => {
@@ -28,11 +28,11 @@ describe('Borrower Copilot domain rules', () => {
     expect(result.safeAmount).toBeLessThan(100000)
   })
 
-  it('uses an explicit expense proxy when household expenses are unknown', () => {
+  it('uses an explicit minimum expense floor when household expenses are unknown', () => {
     const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: false, monthlyExpenses: null })
     expect(result.affordability.expensesAssumed).toBe(true)
-    expect(result.affordability.expensesUsed).toBeCloseTo(110000 * RULES.unknownExpenseRatio, 5)
-    expect(result.affordability.safeAvailable).toBeLessThan(110000 * RULES.safeFoir - 14000)
+    expect(result.affordability.expensesUsed).toBe(RULES.minimumExpenseFloor)
+    expect(result.affordability.safeAvailable).toBe(22500)
     expect(result.confidence.level).toBe('Medium')
   })
 
@@ -48,9 +48,22 @@ describe('Borrower Copilot domain rules', () => {
     expect(result.route.key).toBe('lap')
     expect(result.route.product).toContain('secured business')
     expect(result.confidence.level).toBe('Low')
-    expect(result.affordability.householdIncome).toBe(53000)
+    expect(result.affordability.householdIncome).toBe(65000)
     expect(result.affordability.expensesAssumed).toBe(true)
     expect(result.safeAmount).toBeLessThanOrEqual(SAMPLE_BORROWERS.Ravi.collateralValue * RULES.securedLtv)
+  })
+
+  it('keeps borrower-safe capacity independent from collateral value', () => {
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Ravi, collateralValue: 100000 })
+    expect(result.lenderAmount).toBeLessThanOrEqual(50000)
+    expect(result.safeAmount).toBeGreaterThan(result.lenderAmount)
+  })
+
+  it('applies rate-rise stress only to floating-rate secured routes', () => {
+    const fixed = evaluateBorrower(SAMPLE_BORROWERS.Priya)
+    const secured = evaluateBorrower(SAMPLE_BORROWERS.Ravi)
+    expect(fixed.stress.requestedEmi).toBeCloseTo(calculateEmi(fixed.requested, fixed.rate.max, fixed.tenure), 5)
+    expect(secured.stress.requestedEmi).toBeGreaterThan(calculateEmi(secured.requested, secured.rate.max, secured.tenure))
   })
 
   it('keeps unsecured business routing available when no collateral is supplied', () => {
@@ -58,10 +71,10 @@ describe('Borrower Copilot domain rules', () => {
     expect(result.route.key).toBe('business')
   })
 
-  it('caps the fair-rate benchmark instead of stacking punitive risk pricing', () => {
+  it('keeps the fair-rate benchmark honest without a hidden cap', () => {
     const result = evaluateBorrower(SAMPLE_BORROWERS.Anita)
     expect(result.rate.riskFlags).toEqual(['recent bounced payment', 'high-cost debt'])
-    expect(result.rate.max).toBeLessThanOrEqual(20)
+    expect(result.rate.max).toBe(23)
     expect(result.rate.min).toBeLessThanOrEqual(result.rate.max)
   })
 
@@ -74,7 +87,7 @@ describe('Borrower Copilot domain rules', () => {
     const result = evaluateBorrower(SAMPLE_BORROWERS.Anita)
     expect(result.decision).toBe('DON’T BORROW')
     expect(result.rate.max).toBeGreaterThan(result.rate.min)
-    expect(result.stress.survives).toBe(true)
+    expect(result.stress.survives).toBe(false)
   })
 
   it('keeps age in the tenure calculation when a borrower is close to the age limit', () => {
