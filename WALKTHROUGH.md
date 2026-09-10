@@ -1,6 +1,6 @@
 # Five-minute walkthrough
 
-## 0:00–0:45 — What I built
+## What I built
 
 Borrower Copilot is a local borrower self-assessment. A borrower enters the information they know and gets four answers: whether to borrow, a lender-side amount and a safer amount, a rate range with an illustrative APR, and an EMI ceiling with a stress case.
 
@@ -10,7 +10,7 @@ The result also shows a tenure trade-off with EMI and total interest, plus a Neg
 
 There is no login, backend, bureau pull or stored personal data.
 
-## 0:45–2:00 — Priya
+## Priya
 
 Priya is salaried with ₹1.10L net monthly income, a ₹14k car EMI and a 780 score. She wants ₹8L for a wedding. The challenge gives ₹28k rent. The prefilled run also enters ₹0 for general maintenance, so the current model applies its ₹7,500 minimum maintenance floor instead of allowing zero household maintenance.
 
@@ -22,7 +22,7 @@ The key affordability rule is:
 
 So the borrower-safe new EMI is ₹0 and the borrower-safe amount is ₹0. The current verdict is DON'T BORROW. The lender-side estimate is still about ₹15.3L, but Priya should not use that as her personal affordability target.
 
-## 2:00–3:15 — Ravi
+## Ravi
 
 Ravi is self-employed. He reports ₹40k–₹80k cash income, but his ITR shows ₹4.2L for the year. The app uses the documented figure for normalization, so borrower income becomes ₹35k/month. Operating cash is not added on top.
 
@@ -34,7 +34,7 @@ The ₹15L request is above the absolute feasible ceiling, so the verdict is BOR
 
 The unsecured business route is still reachable for a business borrower with no collateral.
 
-## 3:15–4:00 — Anita
+## Anita
 
 Anita has ₹26k–₹30k variable income, ₹1,050 existing EMI, unknown credit, one recent bounce and ₹35k of high-cost app debt. She wants ₹1.5L for an electric scooter.
 
@@ -44,7 +44,7 @@ High-cost debt plus a recent bounce is treated as severe debt risk. The current 
 
 The current two-wheeler rate band is 14%–23% after unknown credit and non-salaried adjustments. APR is calculated only on the absolute feasible ceiling, which is about ₹0.66L for this profile.
 
-## 4:00–5:00 — Code and next steps
+## Code and next steps
 
 The domain rules are in `src/domain/rules.js`, separate from the UI. The main assumptions are at the top of the file, so they can be changed in one place. Domain tests are in `src/domain/rules.test.js`.
 

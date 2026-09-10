@@ -115,12 +115,6 @@ These are prototype planning bands, not lender quotes.
 
 Recent bounce and high-cost debt are **risk flags**, not stacked fair-rate penalties. They remain visible and can trigger the `DON'T BORROW` guard. The rate band remains a negotiation benchmark; severe debt risk is handled in the borrowing decision rather than being used to make a punitive quote look fair.
 
-## EMI and principal
-
-The app uses the reducing-balance EMI formula and the reverse formula to turn an EMI ceiling into a principal.
-
-The midpoint of the rate band is used only as a planning rate for principal sizing. The borrower still sees the full rate band.
-
 ## Absolute feasible ceiling
 
 The app keeps the two required O2 numbers:
@@ -189,44 +183,6 @@ Confidence falls when credit is unknown, income is non-salaried, expenses are un
 
 Unknown is never treated as zero. Unknown credit stays unknown and widens the rate band. Unknown expenses use the visible maintenance floor and lower confidence.
 
-## Three challenge borrowers
-
-### Priya
-
-- ₹1.10L net salary, ₹14k existing EMI, credit score 780.
-- ₹8L wedding request.
-- ₹28k rent and ₹0 general-maintenance input in the prefilled run.
-- The ₹7.5k maintenance floor leaves no safe new EMI after rent and existing EMI.
-- Borrower-safe amount: **₹0**.
-- Lender-side estimate: **about ₹15.3L**.
-- Absolute feasible ceiling: **₹0**.
-- Verdict: **DON'T BORROW**.
-
-### Ravi
-
-- ₹40k–₹80k cash income, ₹4.2L ITR income.
-- Wife earns ₹18k/month.
-- ₹0 existing EMI, unknown credit, ₹45L unencumbered shop.
-- ₹15L business request.
-- Documented ITR income is used as ₹35k/month; operating cash is not added on top.
-- Wife's ₹18k is added only to borrower-safe household capacity.
-- Unknown household expenses use the ₹7,500 maintenance floor rather than zero.
-- Lender-side estimate: **about ₹7.7L**.
-- Borrower-safe amount: **about ₹6.0L**.
-- Absolute feasible ceiling: **about ₹6.0L**.
-- Verdict: **BORROW LESS**.
-
-### Anita
-
-- ₹26k–₹30k variable income, ₹1,050 existing EMI.
-- Unknown credit, one recent bounce, high-cost app debt.
-- ₹1.5L vehicle request.
-- Unknown household expenses use the ₹7,500 maintenance floor rather than zero.
-- Borrower-safe amount: **about ₹0.68L**.
-- Absolute feasible ceiling: **about ₹0.68L**.
-- The severe-debt guard fires regardless of loan purpose.
-- Verdict: **DON'T BORROW**.
-
 ## What this prototype does not know
 
 - Bureau data
@@ -239,7 +195,3 @@ Unknown is never treated as zero. Unknown credit stays unknown and widens the ra
 - Whether the requested loan is affordable under facts not supplied by the borrower
 
 Those are limitations, not numbers the prototype should invent.
-
-## Live rule change
-
-Changing `safeFoir` from 40% to 35% changes borrower-safe EMI and amount but not lender-side capacity. Changing `lenderFoir` changes lender-side capacity. Changing `processingFee` changes APR. Changing `stressIncomeDrop` changes the stress result. Changing `stressExpenseReduction` changes stressed expense room. Changing `minimumExpenseFloor` changes known-low and unknown-expense cases. Changing `variableIncomeShare` changes variable/self-employed range normalization. Changing the risk guard changes which debt profiles can borrow at all.
