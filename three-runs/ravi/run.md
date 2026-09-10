@@ -52,7 +52,7 @@ The collateral question appears because Ravi is self-employed. The current form 
 
 **BORROW LESS**
 
-The ₹15L request is above the practical amount. Ravi's property establishes a secured route, while the wife's income improves borrower-safe household capacity. Because household expenses are unknown, the model uses a disclosed ₹7,500 maintenance floor rather than treating missing expenses as ₹0.
+The ₹15L request is above the absolute feasible ceiling. Ravi's property establishes a secured route, while the wife's income improves borrower-safe household capacity. Because household expenses are unknown, the model uses a disclosed ₹7,500 maintenance floor rather than treating missing expenses as ₹0.
 
 Confidence: **Low** because the credit score and household expenses are not known, and the income is self-employed.
 
@@ -62,27 +62,29 @@ Confidence: **Low** because the credit score and household expenses are not know
 - Estimated lender-side capacity: **about ₹7.7L**
 - Borrower-safe household amount: **about ₹6.0L**
 - Collateral cap at 50% LTV: **₹22.5L**
+- Absolute feasible ceiling: **about ₹6.0L**
 - Practical amount to plan around: **about ₹6.0L**
 - Safe EMI ceiling: **₹13,700/month**
 
 The borrower-safe amount uses Ravi's normalized ₹35k borrower income plus his wife's ₹18k household income, then subtracts the ₹7,500 maintenance floor. The lender-side number uses Ravi's ₹35k normalized income only.
 
-The practical amount is the lower of lender-side capacity and borrower-safe capacity, so the card uses about ₹6.0L. The ₹22.5L collateral cap is not the recommendation because income affordability is lower.
+The absolute feasible ceiling is the lower of lender-side and borrower-safe capacity, so the card uses about ₹6.0L. The ₹22.5L collateral cap is not the recommendation because income affordability is lower.
 
 ## O3 — What rate?
 
 - Route: **Loan against property / secured business loan**
-- Fair rate band: **11%–15%**
+- Rate band: **11%–15%**
 - All-in APR estimate: **about 12.6%–17.1%**
-- Prototype processing fee: **2%**, about ₹12,042 on the borrower-safe amount
+- Prototype processing fee: **2%**, about ₹12,042 on the absolute feasible ceiling
 
 The secured route starts from the 10%–14% prototype band. Unknown credit does not add a separate penalty on this secured route in the current code, while non-salaried income adds 1 percentage point. The resulting 11%–15% band is illustrative.
 
-The current implementation does **not** apply the documented fair-rate cap-buffer as a separate constant. It hard-codes the intended +1 pp cap behavior in the rate logic. This should be made explicit in code before submission.
+APR is calculated only on the absolute feasible ceiling, so the fee and APR are aligned to the same principal used for the conservative maximum planning amount.
 
 ## O4 — What EMI?
 
 - Borrower-safe EMI ceiling: **about ₹13,700/month**
+- Absolute feasible ceiling: **about ₹6.0L**
 - Practical amount to plan around: **about ₹6.0L**
 - Tenure used: **60 months**
 - Tenure trade-off uses the practical amount at the 13% midpoint.
@@ -95,7 +97,7 @@ The current implementation does **not** apply the documented fair-rate cap-buffe
 - Requested ₹15L EMI at the stressed rate of 17%: **about ₹37.3k/month**
 - Stress result: **Buffer breaks**
 
-The trade-off uses the practical amount because that is the amount the card recommends. The safe EMI ceiling is still shown separately because it is the household's monthly limit.
+The trade-off uses the same absolute feasible principal that the card recommends. The safe EMI ceiling is still shown separately because it is the household's monthly limit.
 
 ## Negotiation Card
 
@@ -104,10 +106,11 @@ The card should show:
 - Recommended / practical amount: **about ₹6.0L**
 - Lender-side estimate: **about ₹7.7L**
 - Borrower-safe amount: **about ₹6.0L**
-- Fair rate: **11%–15%**
+- Absolute feasible ceiling: **about ₹6.0L**
+- Rate: **11%–15%**
 - APR including fee: **about 12.6%–17.1%**
 - EMI ceiling: **about ₹13,700/month**
 - Route: **Loan against property / secured business loan**
-- Verdict reason: the ₹15L request is above the practical amount after borrower-safe household affordability
+- Verdict reason: the ₹15L request is above the absolute feasible ceiling after borrower-safe household affordability
 
 I will add the result/card screenshots in this folder.
