@@ -53,9 +53,9 @@ The main domain logic is in [_`src/domain/rules.js`_](./src/domain/rules.js) and
 
 The app has the three borrowers from the challenge as prefilled examples:
 
-- Priya — Bengaluru, salaried, ₹1.10L net income, ₹14k car EMI, score 780, ₹28k rent and zero entered general maintenance, ₹8L wedding loan. With the current protective ₹7.5k maintenance floor, her borrower-safe EMI room is ₹0, so the current verdict is **DON'T BORROW**.
-- Ravi — Mysuru, self-employed, ₹4.2L documented annual income, wife earns ₹18k/month, ₹45L unencumbered shop, ₹15L business borrowing request. The current model normalizes Ravi to ₹35k/month, routes him to secured business/LAP and gives a borrower-safe amount of about ₹6.0L.
-- Anita — Hubballi, variable income, existing app debt, recent bounce, ₹1.5L vehicle request. The current model gives a mathematical borrower-safe amount of about ₹0.68L but the debt-risk guard still gives **DON'T BORROW**.
+- Priya — Bengaluru, salaried, ₹1.10L net income, ₹14k car EMI, score 780, ₹28k rent and zero entered general maintenance. The current protective ₹7.5k maintenance floor leaves **₹0 borrower-safe EMI and ₹0 borrower-safe amount**, so the current verdict is **DON'T BORROW**.
+- Ravi — Mysuru, self-employed, ₹4.2L documented annual income, wife earns ₹18k/month, ₹45L unencumbered shop, ₹15L business borrowing request. The current model normalizes Ravi to ₹35k/month, routes him to secured business/LAP and gives a borrower-safe amount of about **₹6.0L**.
+- Anita — Hubballi, variable income, existing app debt, recent bounce, ₹1.5L vehicle request. The current model gives a mathematical borrower-safe amount of about **₹0.68L** and returns **BORROW LESS** because the vehicle route is treated as productive under the severe-debt exception. This is a deliberate prototype judgement and should be defended in the interview.
 
 See `three-runs/` for the written run-throughs. Add the screenshots from the actual app beside each `run.md` before submission.
 
