@@ -38,11 +38,12 @@ The main domain logic is in `src/domain/rules.js` and is separate from the React
 - Other household income for borrowers who expect to rely on it; this affects borrower-safe household capacity but is not silently treated as lender/co-applicant income.
 - Conservative income normalization for self-employed and variable income.
 - Separate lender-side and borrower-safe EMI ceilings.
-- **Known household expenses are subtracted inside the borrower-safe FOIR calculation.** For example, ₹1.10L income at 40% gives ₹44k, then ₹14k existing EMI and ₹28k expenses leave ₹2k for a new EMI.
-- Personal, business, secured/LAP and two-wheeler routes.
-- Rate bands with explicit minimum and maximum adjustments for credit uncertainty, income type, recent bounce and high-cost debt.
+- **Known household expenses are subtracted inside the borrower-safe FOIR calculation.**
+- **Unknown household expenses are never treated as ₹0**; a disclosed 20% household-income planning proxy is used and confidence is lowered.
+- Personal, business, secured/LAP and two-wheeler routes. Ravi's collateral routes him to secured business/LAP; unsecured business remains reachable when no collateral is supplied.
+- Fair-rate bands with explicit credit/income adjustments and a cap so adverse risk does not turn the Negotiation Card into a lender worst-case price. Recent bounce and high-cost debt remain risk flags and can trigger DON'T BORROW.
 - All-in APR estimate with the processing fee included, calculated on the practical amount shown on the card.
-- A stress case with lower borrower income and a higher rate, while keeping known household expenses in the safe calculation.
+- A stress case with lower borrower income and a higher rate; known/assumed expenses are adjusted modestly rather than assumed perfectly static.
 - A numeric tenure trade-off showing EMI and total interest for nearby terms around the selected tenure.
 - Confidence based on missing or uncertain information.
 - Borrow / Borrow Less / Don't Borrow verdicts.
@@ -62,7 +63,7 @@ See `three-runs/` for the written run-throughs. Add the screenshots from the act
 
 See `RULES.md` for the full table of thresholds, bands, formulas, reasons and limits.
 
-Important: the rate bands, FOIR, LTV, processing fee and stress values are prototype judgements. They are not promises from any lender and are not presented as universal RBI rules.
+Important: the rate bands, FOIR, LTV, processing fee, expense proxy and stress values are prototype judgements. They are not promises from any lender and are not presented as universal RBI rules.
 
 ## Five-minute walkthrough
 
