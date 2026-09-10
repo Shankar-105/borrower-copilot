@@ -1,6 +1,6 @@
 # Borrower Copilot — Rules
 
-This is a borrower self-assessment, not a lender approval model. The goal is that every important number can be traced to an answer.
+This is a borrower self-assessment, not a lender approval model. The goal is that every important number can be traced to an answer. The challenge asks for a self-assessment with lender-side capacity, borrower-safe capacity, fair-rate band, EMI ceiling/stress, adaptive questions, honest uncertainty and a usable Negotiation Card. citechallenge
 
 ## Main rules
 
@@ -11,19 +11,22 @@ This is a borrower self-assessment, not a lender approval model. The goal is tha
 | Processing fee | 2% | Lets the app show an all-in APR estimate | My judgement |
 | Stress income drop | 15% | Tests a lower-income month | My judgement |
 | Stress rate increase | 2 pp | Tests a higher-rate case | My judgement |
+| Stress expense reduction | 10% | Allows limited variable-spend adjustment under stress without pretending all expenses disappear | My judgement |
+| Unknown expense proxy | 20% of household income | Unknown is never treated as ₹0; this creates a disclosed conservative planning baseline | My judgement |
+| Fair-rate cap buffer | +1 pp over route base maximum | A borrower negotiation benchmark should not become a lender worst-case price; adverse risk is surfaced separately | My judgement |
 | Tenure | 12–84 months | Keeps the prototype in a normal range | My judgement |
 | Age limit | 60 years | Limits repayment horizon in this prototype | My judgement |
 | Secured LTV cap | 50% | Collateral is an upper cap, not a replacement for income affordability | My judgement |
 | Variable income | Low + 35% of range | Does not treat the best month as normal income | My judgement |
 | Self-employed cash | 70% of cash when no ITR is available | Reduces reliance on undocumented cash income | My judgement |
 
-The FOIR numbers are prototype assumptions. They are not universal RBI rules.
+The FOIR, LTV, fee, rate bands and stress values are prototype assumptions. They are not universal RBI rules or lender promises.
 
 ## Questions
 
-The form is adaptive. The core questions are purpose, amount, loan type, income and type, existing EMIs, household expenses, age and credit score if known. Conditional questions appear for self-employed/business borrowers, and risk questions are included because they move rate or decision.
+The form is adaptive. The core questions are purpose, amount, loan type, income and type, existing EMIs, household expenses, age and credit score if known. Conditional questions appear for self-employed/business borrowers, and risk questions are included because they move decision/confidence or the benchmark.
 
-Each optional question is kept only when it can change an output: other household income changes safe household capacity, expenses change safe EMI capacity, collateral changes route/collateral cap, risk answers change rate or decision, and tenure changes EMI/amount/APR.
+Each additional question must change an output. Other household income changes safe household capacity; expenses change safe EMI capacity; collateral changes route/collateral cap; risk answers change the decision/confidence; tenure changes EMI/amount/APR; income type and documentation change normalization; credit changes the rate band and confidence.
 
 ## Household income
 
@@ -55,7 +58,7 @@ Otherwise:
 
 ## Affordability
 
-Let `I` be normalized borrower income, `H` be other household income, `E` be existing monthly EMIs, and `X` be known monthly household expenses excluding EMIs.
+Let `I` be normalized borrower income, `H` be other household income, `E` be existing monthly EMIs, and `X` be monthly household expenses excluding EMIs.
 
 Lender-side capacity uses only borrower income:
 
@@ -69,15 +72,17 @@ Borrower-safe household capacity can use both incomes:
 
 `safeTotal = householdIncome × 40%`
 
-If household expenses are known, **expenses are part of the safe FOIR calculation and are subtracted from the FOIR ceiling**:
+If household expenses are known:
 
 `safeAvailable = max(0, safeTotal - E - X)`
 
-If expenses are unknown:
+If household expenses are unknown, the model **does not use zero**. It uses a disclosed planning proxy:
 
-`safeAvailable = max(0, safeTotal - E)`
+`assumedExpenses = householdIncome × 20%`
 
-The app does not invent ₹0 expenses. Missing expenses lower confidence.
+`safeAvailable = max(0, safeTotal - E - assumedExpenses)`
+
+This makes silence widen uncertainty rather than manufacture affordability. The proxy is explicitly labelled as a judgement and is not presented as the borrower's actual spending.
 
 ### Priya example
 
@@ -89,7 +94,7 @@ For Priya, if the borrower enters ₹28,000 as monthly household expenses:
 
 That ₹2,000 is then converted into the borrower-safe principal using the midpoint rate and selected tenure. The expense input therefore directly changes the safe amount.
 
-The challenge profile itself says Priya **rents** for ₹28,000. Rent is not necessarily her full household spending. In the prefilled challenge run, ₹28,000 is used as the known expense input so the app demonstrates the requested expense-sensitive rule; a real borrower should enter total monthly household expenses excluding EMIs.
+The challenge profile itself says Priya **rents** for ₹28,000. Rent is not necessarily her full household spending. In the prefilled challenge run, ₹28,000 is used as the known expense input so the app demonstrates the expense-sensitive rule; a real borrower should enter total monthly household expenses excluding EMIs.
 
 ## Rate bands
 
@@ -109,12 +114,11 @@ These are prototype planning bands, not lender quotes.
 | Credit 750+ | -1.5 pp | -1.5 pp | Strong stated score |
 | Credit 700–749 | 0 pp | 0 pp | Middle bucket |
 | Credit below 700 | +2.5 pp | +2.5 pp | Weaker stated score |
-| Credit unknown | +2 pp | +3 pp | Unknown credit widens the range |
+| Credit unknown | +2 pp | +3 pp | Unknown credit widens the range without inventing a score |
 | Non-salaried | +1 pp | +1 pp | More income uncertainty |
-| Recent bounce | +2 pp | +3 pp | Recent repayment stress |
-| High-cost debt | +1 pp | +2 pp | Existing expensive debt |
+| Fair-rate ceiling | Base maximum +1 pp | Base maximum +1 pp | Prevents a negotiation benchmark from becoming an absurd worst-case quote |
 
-Unknown credit is represented with separate minimum and maximum adjustments. It is never converted into a fake score.
+Recent bounce and high-cost debt are **risk flags**, not stacked fair-rate penalties. They remain visible and can trigger the `DON'T BORROW` guard. This separates two concepts the borrower needs to understand: *what is a defensible benchmark for negotiation* versus *whether this borrower should take new debt at all*.
 
 ## EMI and principal
 
@@ -133,14 +137,18 @@ The app keeps both required O2 numbers:
 
 The Negotiation Card recommends the practical amount because an amount that is affordable but unlikely to be sanctioned is not useful as the amount to plan around.
 
+The displayed EMI ceiling corresponds to the practical amount. If collateral caps the principal below the income-derived safe amount, the recommended EMI is recalculated from that practical principal rather than displaying unused safe headroom.
+
 ## Product routing
 
-- Business purpose + supplied property/self-employed profile → LAP / secured business route.
+- Business purpose + supplied property → LAP / secured business route.
 - Business purpose without a secured route → business loan.
 - Vehicle purpose → two-wheeler loan.
 - Otherwise → personal loan.
 
 Ravi is routed to a secured business/LAP route. The ₹45L property produces a ₹22.5L collateral cap, but income affordability is lower, so collateral does not justify a ₹15L recommendation.
+
+The unsecured `business` route remains reachable when a business borrower supplies no collateral. This avoids a dead product tier while preserving the challenge's secured-Ravi case.
 
 ## Decision
 
@@ -149,7 +157,7 @@ Ravi is routed to a secured business/LAP route. The ₹45L property produces a �
 3. `BORROW LESS` if the request is above the practical amount.
 4. Otherwise `BORROW`.
 
-The stress case is shown separately. A failed stress case does not automatically change the base verdict because it is a resilience check.
+The stress case is shown separately. A failed stress case does not automatically change the base verdict because it is a resilience check; the borrower can see the failed buffer without the model pretending that stress is a new underwriting decision.
 
 ## Stress
 
@@ -157,7 +165,8 @@ The stress case is shown separately. A failed stress case does not automatically
 - The rate rises by 2 percentage points above the maximum rate in the band.
 - Requested EMI is compared with stressed safe monthly room.
 - Other household income remains as separately supplied rather than being silently stress-reduced.
-- Known household expenses remain in the stressed safe-FOIR calculation.
+- Known household expenses remain in the stressed safe-FOIR calculation, but the model reduces the expense load by 10% to represent limited variable-spend adjustment.
+- Unknown expenses use the same disclosed proxy, also reduced by 10% under stress.
 
 ## APR
 
@@ -165,11 +174,13 @@ The prototype assumes a 2% processing fee. It calculates APR from net disbursal 
 
 APR is calculated on the **practical amount**, because that is the amount the card recommends. If practical capacity is zero, APR is shown as zero rather than inventing a benchmark for a loan the borrower should not take.
 
+This is an illustrative APR for the fee model in this prototype, not a full lender KFS. The app does not know every possible charge or lender-specific APR convention.
+
 ## Confidence and unknowns
 
 Confidence falls when credit is unknown, income is non-salaried, expenses are unknown, a bounce exists, or age is unknown.
 
-Unknown is never treated as zero. Unknown credit stays unknown and widens the rate band.
+Unknown is never treated as zero. Unknown credit stays unknown and widens the rate band. Unknown expenses use a visible proxy and lower confidence.
 
 ## Three challenge borrowers
 
@@ -190,6 +201,7 @@ Unknown is never treated as zero. Unknown credit stays unknown and widens the ra
 - ₹15L business request.
 - ITR gives normalized borrower income of ₹35k/month.
 - Wife's ₹18k is added only to borrower-safe household capacity.
+- Unknown household expenses use the disclosed 20% proxy rather than zero.
 - Lender-side capacity remains based on Ravi's documented income.
 - Secured route and ₹22.5L collateral cap apply.
 - Verdict: BORROW LESS.
@@ -199,7 +211,9 @@ Unknown is never treated as zero. Unknown credit stays unknown and widens the ra
 - ₹26k–₹30k variable income, ₹1,050 existing EMI.
 - Unknown credit, one recent bounce, high-cost app debt.
 - ₹1.5L vehicle request.
-- Verdict: DON'T BORROW because the debt-risk guard fires.
+- Unknown household expenses use the disclosed proxy rather than zero.
+- The recent bounce and high-cost debt trigger the debt-risk guard; they are not stacked into an extreme fair-rate claim.
+- Verdict: DON'T BORROW.
 
 ## What this prototype does not know
 
@@ -215,4 +229,4 @@ Those are limitations, not numbers the prototype should invent.
 
 ## Live rule change
 
-Changing `safeFoir` from 40% to 35% changes borrower-safe EMI and amount but not lender-side capacity. Changing `lenderFoir` changes lender-side capacity. Changing `processingFee` changes APR. Changing `stressIncomeDrop` changes the stress result.
+Changing `safeFoir` from 40% to 35% changes borrower-safe EMI and amount but not lender-side capacity. Changing `lenderFoir` changes lender-side capacity. Changing `processingFee` changes APR. Changing `stressIncomeDrop` changes the stress result. Changing `unknownExpenseRatio` changes only cases where expenses are unknown. Changing `fairRateCapBuffer` changes the negotiation benchmark without changing the borrowing verdict.
