@@ -23,63 +23,76 @@ The app uses the ITR income for lender-side capacity because it is documented. R
 
 ## Questions shown
 
+### Must answer
+
 1. What are you borrowing for? — Business or stock
 2. What loan type are you considering? — Business loan
 3. How much do you want to borrow? — ₹15,00,000
 4. How does your income arrive? — Self-employed
 5. Lower monthly income — ₹40,000
 6. Higher monthly income — ₹80,000
-7. Annual documented income (ITR) — ₹4,20,000
-8. Existing monthly EMIs — ₹0
-9. Other household income you expect to rely on — ₹18,000
-10. Do you know your monthly household expenses? — Not yet
-11. Your age — 42
-12. Credit score, if known — Not known
-13. Unencumbered property or collateral value — ₹45,00,000
-14. Any EMI bounced in the last 6 months? — No
-15. Any app or short-term debt above 24%? — No
-16. Preferred tenure — 5 years
+7. Existing monthly EMIs — ₹0
+8. Do you own your home or rent? — Own House
+9. Do you know your monthly household expenses? — Not yet
+10. Your age — 42
+
+### Additional questions
+
+11. Annual documented income (ITR) — ₹4,20,000
+12. Other household income you expect to rely on — ₹18,000
+13. Credit score, if known — Not known
+14. Unencumbered property or collateral value — ₹45,00,000
+15. Any EMI bounced in the last 6 months? — No
+16. Any app or short-term debt above 24%? — No
+17. Preferred tenure — 5 years
+
+The collateral question appears because Ravi is self-employed. The current form uses the challenge's collateral to route him to the secured business/LAP path.
 
 ## O1 — Should I borrow?
 
 **BORROW LESS**
 
-The ₹15L request is above the practical amount. Ravi's property establishes a secured route, while the wife's income improves borrower-safe household capacity. Because household expenses are unknown, the model uses a disclosed 20% household-income expense proxy rather than treating missing expenses as ₹0.
+The ₹15L request is above the practical amount. Ravi's property establishes a secured route, while the wife's income improves borrower-safe household capacity. Because household expenses are unknown, the model uses a disclosed ₹7,500 maintenance floor rather than treating missing expenses as ₹0.
 
 Confidence: **Low** because the credit score and household expenses are not known, and the income is self-employed.
 
 ## O2 — How much?
 
-- Estimated lender-side capacity: **about ₹7.5L**
-- Borrower-safe household amount: **about ₹4.6L**
+- Normalized borrower income: **₹35,000/month** from the ₹4.2L documented annual income
+- Estimated lender-side capacity: **about ₹7.7L**
+- Borrower-safe household amount: **about ₹6.0L**
 - Collateral cap at 50% LTV: **₹22.5L**
-- Practical amount to plan around: **about ₹4.6L**
-- Safe EMI ceiling: **₹10,600/month**
+- Practical amount to plan around: **about ₹6.0L**
+- Safe EMI ceiling: **₹13,700/month**
 
-The borrower-safe amount uses Ravi's normalized ₹35k borrower income plus his wife's ₹18k household income, then subtracts the 20% unknown-expense proxy. The lender-side number uses Ravi's ₹35k normalized income only.
+The borrower-safe amount uses Ravi's normalized ₹35k borrower income plus his wife's ₹18k household income, then subtracts the ₹7,500 maintenance floor. The lender-side number uses Ravi's ₹35k normalized income only.
 
-The practical amount is the lower of lender-side capacity and borrower-safe capacity, so the card uses about ₹4.6L.
+The practical amount is the lower of lender-side capacity and borrower-safe capacity, so the card uses about ₹6.0L. The ₹22.5L collateral cap is not the recommendation because income affordability is lower.
 
 ## O3 — What rate?
 
 - Route: **Loan against property / secured business loan**
-- Fair rate band: **13%–15%**
-- All-in APR estimate: **about 14.6%–17.0%**
-- Prototype processing fee: **2%**, about ₹9,111 on the practical amount
+- Fair rate band: **11%–15%**
+- All-in APR estimate: **about 12.6%–17.1%**
+- Prototype processing fee: **2%**, about ₹12,042 on the borrower-safe amount
 
-The secured route starts from the 10%–14% prototype band. Unknown credit adds +2 pp to the minimum and +3 pp to the maximum, and non-salaried income adds 1 pp. The fair-rate benchmark is capped at one point above the route base maximum, so unknown risk widens the range without turning the card into an absurd worst-case lender quote.
+The secured route starts from the 10%–14% prototype band. Unknown credit does not add a separate penalty on this secured route in the current code, while non-salaried income adds 1 percentage point. The resulting 11%–15% band is illustrative.
+
+The current implementation does **not** apply the documented fair-rate cap-buffer as a separate constant. It hard-codes the intended +1 pp cap behavior in the rate logic. This should be made explicit in code before submission.
 
 ## O4 — What EMI?
 
-- Borrower-safe EMI ceiling: **₹10,600/month**
-- Practical amount to plan around: **about ₹4.6L**
+- Borrower-safe EMI ceiling: **about ₹13,700/month**
+- Practical amount to plan around: **about ₹6.0L**
 - Tenure used: **60 months**
-- Tenure trade-off uses the practical amount at the 14% midpoint.
+- Tenure trade-off uses the practical amount at the 13% midpoint.
+- 48 months: about **₹16.2k EMI**, about **₹1.7L total interest**
+- 60 months: about **₹13.7k EMI**, about **₹2.2L total interest** — selected
+- 72 months: about **₹12.1k EMI**, about **₹2.7L total interest**
 - Stress income after a 15% drop: **₹29,750/month**
 - Stress household income including wife's income: **₹47,750/month**
-- Stress household expenses: **about ₹8,595**, after the 10% variable-spend reduction
-- Stressed safe EMI room: **about ₹10,505/month**
-- Requested ₹15L EMI at the stressed rate of 17%: materially above stressed safe room
+- Stressed safe EMI room: **about ₹12,350/month** after the 10% expense reduction
+- Requested ₹15L EMI at the stressed rate of 17%: **about ₹37.3k/month**
 - Stress result: **Buffer breaks**
 
 The trade-off uses the practical amount because that is the amount the card recommends. The safe EMI ceiling is still shown separately because it is the household's monthly limit.
@@ -88,12 +101,13 @@ The trade-off uses the practical amount because that is the amount the card reco
 
 The card should show:
 
-- Recommended / practical amount: **about ₹4.6L**
-- Borrower-safe household ceiling: **about ₹4.6L**
-- Fair rate: **13%–15%**
-- APR including fee: **about 14.6%–17.0%**
-- EMI ceiling: **₹10,600/month**
+- Recommended / practical amount: **about ₹6.0L**
+- Lender-side estimate: **about ₹7.7L**
+- Borrower-safe amount: **about ₹6.0L**
+- Fair rate: **11%–15%**
+- APR including fee: **about 12.6%–17.1%**
+- EMI ceiling: **about ₹13,700/month**
 - Route: **Loan against property / secured business loan**
-- Verdict reason: the ₹15L request is above the practical amount after the disclosed unknown-expense proxy
+- Verdict reason: the ₹15L request is above the practical amount after borrower-safe household affordability
 
 I will add the result/card screenshots in this folder.
