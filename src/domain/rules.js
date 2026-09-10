@@ -132,7 +132,7 @@ function rateBand(profile, route) {
   min = Math.min(min, max)
 
   const confidence = credit.known && !profile.recentBounce && !profile.highCostDebt ? 'Medium-high' : credit.known ? 'Medium' : 'Low'
-  const riskText = riskFlags.length ? ` Risk flags: ${riskFlags.join(' and ')} are handled in the borrowing verdict rather than used to inflate the fair-rate benchmark.` : ''
+  const riskText = riskFlags.length ? ` Risk flags: ${riskFlags.join(' and ')} are handled in the borrowing verdict rather than used to inflate the rate benchmark.` : ''
   return {
     min,
     max,
@@ -217,26 +217,13 @@ export function evaluateBorrower(profile) {
   const stressEmi = calculateEmi(requested, rate.max + stressRateIncrease * 100, tenure)
   const stress = { income: stressIncome, householdIncome: stressAffordability.householdIncome, safeAvailable: stressAffordability.safeAvailable, expensesUsed: stressAffordability.expensesUsed, requestedEmi: stressEmi, survives: stressEmi <= stressAffordability.safeAvailable }
   const severeDebt = profile.highCostDebt === true && profile.recentBounce === true
-  const productiveRouteSignals = [profile.purpose, profile.loanType, route.key, route.product]
-    .map((value) => String(value ?? '').toLowerCase().replace(/[\s_-]+/g, ''))
-  const productiveDebtWarning = severeDebt && [
-    'vehicle',
-    'twowheeler',
-    'vehiclefinance',
-    'scooter',
-    'electricscooter',
-    'business',
-    'securedbusinessloan',
-  ].some((signal) => productiveRouteSignals.some((value) => value.includes(signal)))
   const noCapacity = affordabilityResult.safeAvailable <= 0
   const exceedsSafeCapacity = requested > safeAmount
   const exceedsLenderCapacity = requested > lenderAmount
   const requestedTooHigh = requested > absoluteFeasibleCeiling
-  const decision = noCapacity ? 'DON’T BORROW' : severeDebt && !productiveDebtWarning ? 'DON’T BORROW' : requestedTooHigh || productiveDebtWarning ? 'BORROW LESS' : 'BORROW'
+  const decision = noCapacity ? 'DON’T BORROW' : severeDebt ? 'DON’T BORROW' : requestedTooHigh ? 'BORROW LESS' : 'BORROW'
   const decisionReason = severeDebt
-    ? productiveDebtWarning
-      ? 'Your historical debt profile presents extreme systemic risk, but using this loan to secure a productive asset can help fix your cash flow if execution is tight.'
-      : 'Existing high-cost debt and a recent bounce mean new borrowing could deepen the debt problem.'
+    ? 'Existing high-cost debt and a recent bounce mean new borrowing could deepen the debt problem.'
     : noCapacity
       ? 'The conservative monthly headroom is already used by existing commitments and household costs.'
       : requestedTooHigh && exceedsSafeCapacity && exceedsLenderCapacity
@@ -246,9 +233,9 @@ export function evaluateBorrower(profile) {
           : requestedTooHigh && exceedsLenderCapacity
             ? `The request exceeds the lender-side estimate of ${formatLakhs(lenderAmount)}, which is constrained by institutional affordability or collateral policy.`
             : 'The request fits inside both the lender-side estimate and the conservative borrower-safe ceiling.'
-  const aprLow = calculateApr(safeAmount, rate.min, tenure).apr
-  const aprHigh = calculateApr(safeAmount, rate.max, tenure).apr
-  const aprFee = safeAmount * RULES.processingFee
+  const aprLow = calculateApr(absoluteFeasibleCeiling, rate.min, tenure).apr
+  const aprHigh = calculateApr(absoluteFeasibleCeiling, rate.max, tenure).apr
+  const aprFee = absoluteFeasibleCeiling * RULES.processingFee
   const age = safeNumber(profile.age)
   const maximumTenure = age ? Math.max(RULES.minTenureMonths, Math.min(RULES.maxTenureMonths, (RULES.retirementAge - age) * 12)) : RULES.maxTenureMonths
   const tradeoffPrincipal = requested > absoluteFeasibleCeiling ? absoluteFeasibleCeiling : requested
@@ -263,7 +250,7 @@ export function evaluateBorrower(profile) {
     ? `Your unencumbered collateral supports a lender-side cap of ${formatLakhs(collateralCap)}; ask the lender to explain any quote above the ${formatPercent(rate.min)}–${formatPercent(rate.max)} benchmark.`
     : profile.creditScore >= 750
       ? `Your stated ${profile.creditScore} credit score supports asking for the lower end of the ${formatPercent(rate.min)}–${formatPercent(rate.max)} benchmark.`
-      : `Use the ${formatLakhs(safeAmount)} borrower-safe amount as your ceiling, even if a lender offers more.`
+      : `Use the ${formatLakhs(absoluteFeasibleCeiling)} absolute feasible ceiling as your maximum planning amount, even if a lender offers more.`
   const apr = {
     min: aprLow,
     max: aprHigh,
