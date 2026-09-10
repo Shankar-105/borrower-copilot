@@ -45,40 +45,44 @@ The collateral question is not shown because this is not a secured/LAP case. Oth
 
 ## O1 — Should I borrow?
 
-**BORROW LESS**
+**DON'T BORROW**
 
-Anita has high-cost debt and a recent bounced EMI. The current code recognizes a severe-debt guard, but it makes an exception for productive vehicle/business routes. Because the electric scooter is treated as a productive vehicle purpose, the verdict is **BORROW LESS**, not DON'T BORROW.
+Anita has high-cost debt and a recent bounced EMI. The current decision rule treats that combination as a severe debt-risk guard and does not make an exception based on the loan purpose.
 
-This is a deliberate prototype judgement and is the main point I would defend carefully in the interview. The app still makes the debt risk visible rather than pretending the new borrowing is safe.
+The ₹1.5L request is therefore not a new borrowing recommendation. The mathematical capacity numbers below are still shown so the borrower can understand the affordability calculation rather than being given a black-box refusal.
 
-Confidence: **Low** because income is variable, credit is unknown and household expenses are not known.
+Confidence: **Low** because income is variable, credit is unknown, household expenses are not known and a recent bounce is present.
 
 ## O2 — How much?
 
 - Normalized income: **₹27,400/month** using the low + 35% of range rule
 - Estimated lender-side capacity: **about ₹3.5L**
 - Borrower-safe amount: **about ₹0.68L**
+- Absolute feasible ceiling: **about ₹0.68L**
 - Safe EMI ceiling: **₹2,410/month**
-- Practical amount to plan around: **about ₹0.68L**
+- Practical amount: **about ₹0.68L**
 
-These are mathematical capacity numbers only. The borrower should **not read them as proof that another loan is safe**. The current verdict is BORROW LESS because the request is above the practical amount, while the severe-debt/productive-purpose exception remains visible in the reasoning.
+These are mathematical capacity numbers only. The borrower should **not read them as proof that another loan is safe**. The base verdict is DON'T BORROW because the recent bounce and high-cost debt trigger the severe-debt guard.
 
 The safe number uses the disclosed ₹7,500 maintenance floor because unknown expenses are never treated as ₹0.
 
 ## O3 — What rate?
 
 - Route: **Two-wheeler loan**
-- Fair rate band: **14%–20%**
+- Rate band: **14%–23%**
 - All-in APR estimate: **about 16.6%–27.5%**
-- Prototype processing fee: **2%**, about ₹1,352 on the borrower-safe amount
+- Prototype processing fee: **2%**, about ₹1,352 on the absolute feasible ceiling
 
-The base two-wheeler band is 11%–19%. Unknown credit adds +2 to +3 points and non-salaried income adds 1 point. The current rate implementation does not apply a separate fair-rate cap constant; the resulting 14%–23% raw band is therefore what the code currently produces if no other cap is added. The current run documentation should not claim a 20% cap unless the code is changed to implement it.
+The base two-wheeler band is 11%–19%. Unknown credit adds +2 to +3 points and non-salaried income adds 1 point. The resulting 14%–23% band is the current illustrative rate benchmark.
 
-The recent bounce and high-cost debt are shown as risk flags rather than stacked into the fair-rate benchmark.
+The recent bounce and high-cost debt are shown as risk flags and handled by the borrowing decision rather than stacked into the rate benchmark.
+
+APR is calculated only on the absolute feasible ceiling, so the fee and APR are aligned to the same principal.
 
 ## O4 — What EMI?
 
 - Base safe EMI ceiling: **₹2,410/month**
+- Absolute feasible ceiling: **about ₹0.68L**
 - Practical amount: **about ₹0.68L**
 - Tenure used: **36 months**
 - Tenure trade-off uses the practical amount at the 17% midpoint.
@@ -90,7 +94,7 @@ The recent bounce and high-cost debt are shown as risk flags rather than stacked
 - Requested ₹1.5L EMI at the current top rate of 23%: **about ₹5.8k/month**
 - Stress result: **Buffer breaks**
 
-The stress case is a resilience check. The base BORROW LESS verdict comes from the request being above the practical amount, with the severe-debt/productive-purpose judgement also visible.
+The stress case is a resilience check. The base DON'T BORROW verdict comes from the severe-debt guard, not from treating the stress result as a separate underwriting decision.
 
 ## Negotiation Card
 
@@ -99,11 +103,12 @@ The card should show:
 - Recommended amount: **about ₹0.68L**
 - Lender-side estimate: **about ₹3.5L**
 - Borrower-safe amount: **about ₹0.68L**
-- Fair rate: **14%–23%** under the current code
+- Absolute feasible ceiling: **about ₹0.68L**
+- Rate: **14%–23%**
 - APR including fee: **about 16.6%–27.5%**
 - EMI ceiling: **₹2,410/month**
 - Route: **Two-wheeler loan**
 - Risk flags: recent bounce + high-cost debt
-- Verdict: **BORROW LESS**
+- Verdict: **DON'T BORROW**
 
 I will add the result/card screenshots in this folder.
