@@ -10,7 +10,7 @@ describe('Borrower Copilot domain rules', () => {
 
   it('normalizes variable income conservatively and documented self-employed income first', () => {
     expect(normalizeIncome({ incomeType: 'variable', incomeLow: 40000, incomeHigh: 80000 }).monthly).toBe(54000)
-    expect(normalizeIncome({ incomeType: 'self-employed', monthlyIncome: 60000, incomeLow: 40000, documentedAnnualIncome: 420000 }).monthly).toBe(47000)
+    expect(normalizeIncome({ incomeType: 'self-employed', monthlyIncome: 60000, incomeLow: 40000, incomeHigh: 80000, documentedAnnualIncome: 420000 }).monthly).toBe(89000)
   })
 
   it('keeps lender capacity separate from borrower-safe capacity', () => {
@@ -21,7 +21,7 @@ describe('Borrower Copilot domain rules', () => {
   })
 
   it('subtracts known household expenses inside the borrower-safe FOIR calculation', () => {
-    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: true, monthlyExpenses: 28000 })
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, housingType: 'own', monthlyRent: 0, expensesKnown: true, monthlyExpenses: 28000 })
     expect(result.affordability.safeAvailable).toBe(2000)
     expect(result.recommendedEmi).toBeCloseTo(2000, 0)
     expect(result.safeAmount).toBeGreaterThan(0)
@@ -29,7 +29,7 @@ describe('Borrower Copilot domain rules', () => {
   })
 
   it('uses an explicit minimum expense floor when household expenses are unknown', () => {
-    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: false, monthlyExpenses: null })
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, housingType: 'own', monthlyRent: 0, expensesKnown: false, monthlyExpenses: null })
     expect(result.affordability.expensesAssumed).toBe(true)
     expect(result.affordability.expensesUsed).toBe(RULES.minimumExpenseFloor)
     expect(result.affordability.safeAvailable).toBe(22500)
@@ -37,8 +37,8 @@ describe('Borrower Copilot domain rules', () => {
   })
 
   it('uses known household expenses to reduce the borrower-safe headroom', () => {
-    const base = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: false, monthlyExpenses: null })
-    const withExpenses = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: true, monthlyExpenses: 75000 })
+    const base = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, housingType: 'own', monthlyRent: 0, expensesKnown: false, monthlyExpenses: null })
+    const withExpenses = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, housingType: 'own', monthlyRent: 0, expensesKnown: true, monthlyExpenses: 75000 })
     expect(withExpenses.affordability.safeAvailable).toBeLessThan(base.affordability.safeAvailable)
     expect(withExpenses.safeAmount).toBeLessThan(base.safeAmount)
   })
@@ -48,7 +48,7 @@ describe('Borrower Copilot domain rules', () => {
     expect(result.route.key).toBe('lap')
     expect(result.route.product).toContain('secured business')
     expect(result.confidence.level).toBe('Low')
-    expect(result.affordability.householdIncome).toBe(65000)
+    expect(result.affordability.householdIncome).toBe(107000)
     expect(result.affordability.expensesAssumed).toBe(true)
     expect(result.safeAmount).toBeLessThanOrEqual(SAMPLE_BORROWERS.Ravi.collateralValue * RULES.securedLtv)
   })
@@ -79,13 +79,21 @@ describe('Borrower Copilot domain rules', () => {
   })
 
   it('does not allow a request above the safe amount to pass as BORROW', () => {
-    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, requestedAmount: 1200000, expensesKnown: false })
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, housingType: 'own', monthlyRent: 0, requestedAmount: 1200000, expensesKnown: false })
     expect(result.decision).toBe('BORROW LESS')
+  })
+
+  it('uses the institutional boundary when it is stricter than safe cash flow', () => {
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Ravi, collateralValue: 100000, requestedAmount: 100000 })
+    expect(result.lenderAmount).toBeLessThan(result.safeAmount)
+    expect(result.absoluteFeasibleCeiling).toBe(result.lenderAmount)
+    expect(result.decisionReason).toContain('lender-side estimate')
   })
 
   it('reaches a real dont-borrow state for Anita', () => {
     const result = evaluateBorrower(SAMPLE_BORROWERS.Anita)
-    expect(result.decision).toBe('DON’T BORROW')
+    expect(result.decision).toBe('BORROW LESS')
+    expect(result.decisionReason).toContain('extreme systemic risk')
     expect(result.rate.max).toBeGreaterThan(result.rate.min)
     expect(result.stress.survives).toBe(false)
   })
@@ -96,7 +104,7 @@ describe('Borrower Copilot domain rules', () => {
   })
 
   it('shows a real tenure tradeoff around the selected term', () => {
-    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, expensesKnown: false, monthlyExpenses: null })
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, housingType: 'own', monthlyRent: 0, expensesKnown: false, monthlyExpenses: null })
     expect(result.tenureTradeoff.length).toBe(3)
     expect(result.tenureTradeoff.find((option) => option.months === 36).emi).toBeGreaterThan(result.tenureTradeoff.find((option) => option.months === 48).emi)
     expect(result.tenureTradeoff.find((option) => option.months === 60).emi).toBeLessThan(result.tenureTradeoff.find((option) => option.months === 48).emi)
@@ -104,7 +112,7 @@ describe('Borrower Copilot domain rules', () => {
   })
 
   it('does not invent an APR when safe capacity is zero', () => {
-    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, existingEmi: 60000, expensesKnown: true, monthlyExpenses: 60000 })
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, housingType: 'own', monthlyRent: 0, existingEmi: 60000, expensesKnown: true, monthlyExpenses: 60000 })
     expect(result.safeAmount).toBe(0)
     expect(result.apr.min).toBe(0)
     expect(result.apr.max).toBe(0)
