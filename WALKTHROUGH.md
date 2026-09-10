@@ -38,11 +38,11 @@ The unsecured business route is still reachable for a business borrower with no 
 
 Anita has ₹26k–₹30k variable income, ₹1,050 existing EMI, unknown credit, one recent bounce and ₹35k of high-cost app debt. She wants ₹1.5L for an electric scooter.
 
-The model normalizes her income to ₹27,400 using the low + 35% of range rule. Unknown expenses use the ₹7,500 maintenance floor. This gives a mathematical borrower-safe amount and absolute feasible ceiling of about ₹0.68L, with a safe EMI ceiling of about ₹2,410/month.
+The model normalizes her income to ₹27,400 using the low + 35% of range rule. Unknown expenses use the ₹7,500 maintenance floor. This gives a mathematical borrower-safe amount and absolute feasible ceiling of about ₹0.66L, with a safe EMI ceiling of about ₹2,410/month.
 
-High-cost debt plus a recent bounce is treated as severe debt risk. The current decision rule therefore returns **DON'T BORROW**, regardless of the stated vehicle purpose. The app does not try to justify new borrowing by inventing a productive-purpose exception.
+High-cost debt plus a recent bounce is treated as severe debt risk. The current decision rule therefore returns **DON'T BORROW**, regardless of the stated vehicle purpose. The app does not try to justify new borrowing by inventing a purpose-based exception.
 
-The current two-wheeler rate band is 14%–23% after unknown credit and non-salaried adjustments. APR is calculated only on the absolute feasible ceiling, which is about ₹0.68L for this profile.
+The current two-wheeler rate band is 14%–23% after unknown credit and non-salaried adjustments. APR is calculated only on the absolute feasible ceiling, which is about ₹0.66L for this profile.
 
 ## 4:00–5:00 — Code and next steps
 
@@ -60,7 +60,7 @@ The rate benchmark is kept separate from the borrow/no-borrow decision. Recent b
 
 The stress case drops borrower income by 15% and reduces household expense load by 10%. Only the secured/LAP route applies the configured 2 percentage-point rate stress; the other routes keep the selected fixed-rate assumption. A failed stress case is shown as a resilience check and does not automatically change the base verdict.
 
-If I had more time, I would add better verified expense and income history inputs, more lender-specific product data, and a fuller quote comparison using lender KFS values. I would also improve visual/mobile QA and add the required screenshots beside the three run-throughs.
+If I had more time, I would add better verified expense and income history inputs, more lender-specific product data, and a fuller quote comparison using lender KFS values. I would also improve visual/mobile QA.
 
 I would cut questions that do not change an output. I would also avoid adding more loan products unless the questionnaire has enough information to support them.
 
