@@ -13,7 +13,6 @@ This is a borrower self-assessment, not a lender approval model. The goal is tha
 | Stress rate increase | 2 pp | Tests a higher-rate case for the secured/LAP route | My judgement |
 | Stress expense reduction | 10% | Allows limited variable-spend adjustment under stress without pretending all expenses disappear | My judgement |
 | Minimum maintenance floor | ₹7,500/month | Unknown or implausibly low maintenance is never treated as ₹0; rent is counted separately | My judgement |
-| Fair-rate cap buffer | +1 pp over route base maximum | A borrower negotiation benchmark should not become a lender worst-case price; adverse risk is surfaced separately | My judgement |
 | Tenure | 12–84 months | Keeps the prototype in a normal range | My judgement |
 | Default tenure | 48 months | Gives the form a starting planning tenure | My judgement |
 | Age limit | 60 years | Limits repayment horizon in this prototype | My judgement |
@@ -93,18 +92,6 @@ If household expenses are unknown:
 
 Unknown expenses therefore do **not** become zero. A disclosed ₹7,500 maintenance floor is used and confidence is lowered.
 
-The UI asks for **monthly general maintenance, excluding rent and EMIs**, so rent and general household costs are kept separate in the calculation.
-
-### Priya example
-
-For Priya's prefilled challenge run, the app sets rent to ₹28,000 and the known general-maintenance input to ₹0. Because known expenses are protected by the ₹7,500 floor:
-
-`₹1,10,000 × 40% = ₹44,000 safe FOIR ceiling`
-
-`₹44,000 - ₹14,000 existing EMI - ₹28,000 rent - ₹7,500 maintenance floor = negative`
-
-So her safe new EMI is `₹0` and the borrower-safe amount is `₹0`. This is intentionally more conservative than treating the challenge's rent as her entire household spending.
-
 ## Rate bands
 
 | Route | Base band |
@@ -125,9 +112,8 @@ These are prototype planning bands, not lender quotes.
 | Credit below 700 | +2.5 pp | +2.5 pp | Weaker stated score |
 | Credit unknown | +2 pp | +3 pp | Unknown credit widens the range without inventing a score |
 | Non-salaried | +1 pp | +1 pp | More income uncertainty |
-| Fair-rate ceiling | Base maximum +1 pp | Base maximum +1 pp | Prevents a negotiation benchmark from becoming an absurd worst-case quote |
 
-Recent bounce and high-cost debt are **risk flags**, not stacked fair-rate penalties. They remain visible and can trigger the `DON'T BORROW` guard. This separates two concepts the borrower needs to understand: *what is a defensible benchmark for negotiation* versus *whether this borrower should take new debt at all*.
+Recent bounce and high-cost debt are **risk flags**, not stacked fair-rate penalties. They remain visible and can trigger the `DON'T BORROW` guard. The rate band remains a negotiation benchmark; severe debt risk is handled in the borrowing decision rather than being used to make a punitive quote look fair.
 
 ## EMI and principal
 
@@ -135,18 +121,24 @@ The app uses the reducing-balance EMI formula and the reverse formula to turn an
 
 The midpoint of the rate band is used only as a planning rate for principal sizing. The borrower still sees the full rate band.
 
-## Practical amount
+## Absolute feasible ceiling
 
-The app keeps both required O2 numbers:
+The app keeps the two required O2 numbers:
 
 - **Lender-side capacity**: what the prototype estimates a lender may size.
-- **Borrower-safe amount**: what the household can safely carry under the safe FOIR/expense rules and, for secured/LAP routes, the collateral cap.
+- **Borrower-safe amount**: what the household can safely carry under the safe FOIR/expense rules.
 
-`practicalAmount = min(lenderAmount, safeAmount)`
+For secured/LAP routes, lender-side capacity also respects the collateral LTV cap.
 
-The Negotiation Card uses the practical amount as its recommended amount when borrowing is possible. When the safe amount is zero, the card instead labels it as a safe amount to revisit later.
+`absoluteFeasibleCeiling = min(lenderAmount, safeAmount)`
 
-The displayed EMI ceiling corresponds to the practical amount. If collateral caps the principal below the income-derived safe amount, the recommended EMI is recalculated from that practical principal rather than displaying unused safe headroom.
+This is the single conservative maximum planning principal. The recommended/practical amount is the lower of the request and this ceiling:
+
+`targetPrincipal = min(requestedAmount, absoluteFeasibleCeiling)`
+
+The displayed recommended EMI is calculated from `targetPrincipal`.
+
+The borrower should use the borrower-safe/absolute-feasible side, not the lender-side estimate, when deciding what they can actually carry.
 
 ## Product routing
 
@@ -162,11 +154,11 @@ The unsecured `business` route remains reachable when a business borrower suppli
 ## Decision
 
 1. `DON'T BORROW` if safe monthly capacity is zero.
-2. `DON'T BORROW` if high-cost debt and a recent bounce are both present, unless the purpose/route is recognized as a productive vehicle or business/secured-business use.
-3. `BORROW LESS` if the request is above the practical amount.
+2. `DON'T BORROW` if high-cost debt and a recent bounce are both present.
+3. `BORROW LESS` if the request is above the absolute feasible ceiling.
 4. Otherwise `BORROW`.
 
-For the productive vehicle/business case with severe debt risk, the current model still returns `BORROW LESS` rather than `DON'T BORROW`, while explaining that the debt profile is high risk. This is a deliberate prototype judgement and should be defended in the follow-up.
+For Anita, the high-cost debt plus recent bounce therefore produces **DON'T BORROW**. The model does not make a separate productive-purpose exception.
 
 The stress case is shown separately. A failed stress case does not automatically change the base verdict because it is a resilience check; the borrower can see the failed buffer without the model pretending that stress is a new underwriting decision.
 
@@ -183,9 +175,11 @@ The stress case is shown separately. A failed stress case does not automatically
 
 The prototype assumes a 2% processing fee. It calculates APR from net disbursal after the fee while EMI is still based on the full principal. A numerical bisection solve is used instead of simply adding the fee percentage to the interest rate.
 
-APR is calculated on the **borrower-safe amount**, not on the lender-side amount. This keeps the displayed APR tied to the conservative planning benchmark shown to the borrower. The practical amount and Negotiation Card may be lower than the safe amount when lender-side capacity or collateral caps it.
+APR is calculated **only on the absolute feasible ceiling**. This keeps the APR, processing fee and maximum planning principal on the same basis as the conservative ceiling:
 
-If the borrower-safe amount is zero, APR is shown as zero rather than inventing a benchmark for a loan the borrower should not take.
+`APR principal = absoluteFeasibleCeiling`
+
+If the absolute feasible ceiling is zero, APR is shown as zero rather than inventing a benchmark for a loan the borrower should not take.
 
 This is an illustrative APR for the fee model in this prototype, not a full lender KFS. The app does not know every possible charge or lender-specific APR convention.
 
@@ -201,10 +195,11 @@ Unknown is never treated as zero. Unknown credit stays unknown and widens the ra
 
 - ₹1.10L net salary, ₹14k existing EMI, credit score 780.
 - ₹8L wedding request.
-- Challenge gives ₹28k rent. The prefilled run also has ₹0 general-maintenance input, which is raised to the protective ₹7,500 floor.
-- `₹44k safe FOIR - ₹14k EMI - ₹28k rent - ₹7.5k floor` leaves no safe new EMI.
+- ₹28k rent and ₹0 general-maintenance input in the prefilled run.
+- The ₹7.5k maintenance floor leaves no safe new EMI after rent and existing EMI.
 - Borrower-safe amount: **₹0**.
 - Lender-side estimate: **about ₹15.3L**.
+- Absolute feasible ceiling: **₹0**.
 - Verdict: **DON'T BORROW**.
 
 ### Ravi
@@ -213,12 +208,12 @@ Unknown is never treated as zero. Unknown credit stays unknown and widens the ra
 - Wife earns ₹18k/month.
 - ₹0 existing EMI, unknown credit, ₹45L unencumbered shop.
 - ₹15L business request.
-- Documented ITR income is used as ₹35k/month; the operating cash range is not added on top.
+- Documented ITR income is used as ₹35k/month; operating cash is not added on top.
 - Wife's ₹18k is added only to borrower-safe household capacity.
-- Unknown household expenses use the disclosed ₹7,500 maintenance floor rather than zero.
-- Lender-side estimate: **about ₹7.7L** at the current secured-route rate midpoint.
+- Unknown household expenses use the ₹7,500 maintenance floor rather than zero.
+- Lender-side estimate: **about ₹7.7L**.
 - Borrower-safe amount: **about ₹6.0L**.
-- Secured route and ₹22.5L collateral cap apply.
+- Absolute feasible ceiling: **about ₹6.0L**.
 - Verdict: **BORROW LESS**.
 
 ### Anita
@@ -226,10 +221,11 @@ Unknown is never treated as zero. Unknown credit stays unknown and widens the ra
 - ₹26k–₹30k variable income, ₹1,050 existing EMI.
 - Unknown credit, one recent bounce, high-cost app debt.
 - ₹1.5L vehicle request.
-- Unknown household expenses use the disclosed ₹7,500 maintenance floor rather than zero.
-- Borrower-safe mathematical amount: **about ₹0.68L**.
-- The recent bounce and high-cost debt trigger the debt-risk guard; they are not stacked into an extreme fair-rate claim.
-- Verdict: **BORROW LESS** in the current implementation because the vehicle route is treated as productive even with the severe-debt guard. This is a notable product judgement, not a challenge-mandated fact.
+- Unknown household expenses use the ₹7,500 maintenance floor rather than zero.
+- Borrower-safe amount: **about ₹0.68L**.
+- Absolute feasible ceiling: **about ₹0.68L**.
+- The severe-debt guard fires regardless of loan purpose.
+- Verdict: **DON'T BORROW**.
 
 ## What this prototype does not know
 
@@ -240,10 +236,10 @@ Unknown is never treated as zero. Unknown credit stays unknown and widens the ra
 - Whether another household earner is a formal co-applicant
 - Actual collateral/title valuation
 - Exact lender rate cards and KFS charges
-- Whether Anita's electric scooter would actually increase delivery income enough to justify new borrowing
+- Whether the requested loan is affordable under facts not supplied by the borrower
 
 Those are limitations, not numbers the prototype should invent.
 
 ## Live rule change
 
-Changing `safeFoir` from 40% to 35% changes borrower-safe EMI and amount but not lender-side capacity. Changing `lenderFoir` changes lender-side capacity. Changing `processingFee` changes APR. Changing `stressIncomeDrop` changes the stress result. Changing `stressExpenseReduction` changes stressed expense room. Changing `minimumExpenseFloor` changes known-low and unknown-expense cases. Changing `variableIncomeShare` changes variable/self-employed range normalization. Changing `fairRateCapBuffer` would change the intended negotiation benchmark, but the current `rateBand` implementation does not yet apply a separate cap-buffer constant; its cap is hard-coded to the base maximum plus 1 pp. This is an implementation/documentation gap to fix before submission.
+Changing `safeFoir` from 40% to 35% changes borrower-safe EMI and amount but not lender-side capacity. Changing `lenderFoir` changes lender-side capacity. Changing `processingFee` changes APR. Changing `stressIncomeDrop` changes the stress result. Changing `stressExpenseReduction` changes stressed expense room. Changing `minimumExpenseFloor` changes known-low and unknown-expense cases. Changing `variableIncomeShare` changes variable/self-employed range normalization. Changing the risk guard changes which debt profiles can borrow at all.
