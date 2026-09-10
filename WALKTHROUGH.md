@@ -4,6 +4,8 @@
 
 Borrower Copilot is a local borrower self-assessment. A borrower enters the information they know and gets four answers: whether to borrow, a lender-side amount and a safer amount, a fair rate range with APR, and an EMI ceiling with a stress case.
 
+The question flow follows the challenge's two tiers. The must-set is kept small enough to produce all four outputs. Extra questions are optional and only appear when they can tighten a number, route, decision, or confidence.
+
 The result also shows a small tenure trade-off with EMI and total interest, plus a Negotiation Card for the lender conversation.
 
 There is no login, backend, bureau pull or stored personal data.
@@ -50,7 +52,7 @@ The affordability rule distinguishes lender and borrower perspectives. Lender-si
 
 Household income and lender-side borrower income are kept separate. That makes the Ravi case easier to defend: a spouse's income can improve household affordability without pretending the lender will count it unless co-applicant treatment is established.
 
-The practical amount is the lower of lender-side and borrower-safe capacity. APR and the tenure trade-off are calculated on that practical amount so the Negotiation Card and supporting numbers refer to the same amount. If collateral caps the principal, the displayed EMI ceiling is recalculated from the practical amount rather than showing unused safe headroom.
+The practical amount is the lower of lender-side and borrower-safe capacity. For a secured route, the lender-side estimate also respects the collateral LTV cap. APR and the tenure trade-off are calculated on the practical amount so the Negotiation Card and supporting numbers refer to the same amount. If collateral caps the principal, the displayed EMI ceiling is recalculated from the practical amount rather than showing unused safe headroom.
 
 The fair-rate benchmark separates **negotiation price** from **borrow/no-borrow risk**. Recent bounce and high-cost debt are decision risk flags, not arbitrary stacked penalties that could tell a borrower that a 25% quote is "fair".
 
