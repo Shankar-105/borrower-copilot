@@ -21,6 +21,10 @@ describe('Borrower Copilot core rules', () => {
     expect(normalizeIncome({ incomeType: 'variable', incomeLow: 40000, incomeHigh: 80000 }).monthly).toBe(54000)
   })
 
+  it('uses the challenge run synthetic combined EMI for Anita', () => {
+    expect(SAMPLE_BORROWERS.Anita.existingEmi).toBe(3500)
+  })
+
   it('treats zero rent as valid while still requiring a renter to answer the rent field', () => {
     const owner = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, housingType: 'own', monthlyRent: 0 })
     const renterWithoutRent = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, monthlyRent: null })

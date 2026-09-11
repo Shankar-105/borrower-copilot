@@ -2,7 +2,7 @@
 
 ## Profile
 
-Anita is 35 in Hubballi, earns ₹26,000–₹30,000 from variable work, has a ₹1,050 existing EMI, unknown credit, one recent bounce, high-cost app debt, and requests ₹1,50,000 for an electric scooter over 36 months.
+Anita is 35 in Hubballi, earns ₹26,000–₹30,000 from variable work, has a combined ₹3,500 monthly EMI across three app loans, unknown credit, one recent bounce, high-cost app debt, and requests ₹1,50,000 for an electric scooter over 36 months.
 
 ## Questions shown — 14 total
 
@@ -14,7 +14,7 @@ Anita is 35 in Hubballi, earns ₹26,000–₹30,000 from variable work, has a �
 4. Income type: Informal or variable
 5. Lower income: ₹26,000
 6. Higher income: ₹30,000
-7. Existing EMI: ₹1,050
+7. Existing EMI: ₹3,500 combined across the app loans
 8. Housing: Own House
 9. Age: 35
 10. Preferred tenure: 36 months
@@ -31,10 +31,10 @@ ITR, collateral and the credit-score field are skipped because they do not apply
 ## Outputs
 
 - Normalized income: **₹27,400/month** using low + 35% of range
-- Lender-side estimate: **about ₹3.3L**
-- Borrower-safe amount: **about ₹2.6L**
-- Absolute feasible ceiling: **about ₹2.6L**
-- Mathematical safe EMI ceiling: **about ₹9,910/month**
+- Lender-side estimate: **about ₹2.7L**
+- Borrower-safe amount: **about ₹2.0L**
+- Absolute feasible ceiling: **about ₹2.0L**
+- Mathematical safe EMI ceiling: **about ₹5,729/month**
 - Rate: **17.5%–26.5%**
 - APR: **about 20.7%–31.9%**
 - Route: Two-wheeler loan
