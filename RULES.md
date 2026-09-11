@@ -141,7 +141,7 @@ APR is calculated **only on the absolute feasible ceiling**. This keeps the APR,
 
 `APR principal = absoluteFeasibleCeiling`
 
-If the absolute feasible ceiling is zero, APR is shown as zero rather than inventing a benchmark for a loan the borrower should not take.
+If the absolute feasible ceiling is zero, APR is marked unavailable rather than shown as a comparable zero-rate benchmark for a loan the borrower should not take.
 
 This is an illustrative APR for the fee model in this prototype, not a full lender KFS. The app does not know every possible charge or lender-specific APR convention.
 

@@ -63,8 +63,13 @@ describe('Borrower Copilot core rules', () => {
 
   it('does not emit invalid money values for an empty profile', () => {
     const result = evaluateBorrower({ incomeType: 'variable', requestedAmount: 100000, tenureMonths: 48 })
-    const values = [result.lenderAmount, result.safeAmount, result.recommendedEmi, result.apr.min, result.apr.max]
-    expect(values.every(Number.isFinite)).toBe(true)
-    expect(values.every((value) => value >= 0)).toBe(true)
+    const moneyValues = [result.lenderAmount]
+    expect(moneyValues.every(Number.isFinite)).toBe(true)
+    expect(moneyValues.every((value) => value >= 0)).toBe(true)
+    expect(result.safeAmount == null || Number.isFinite(result.safeAmount)).toBe(true)
+    expect(result.safeAmount == null || result.safeAmount >= 0).toBe(true)
+    expect(result.recommendedEmi == null || Number.isFinite(result.recommendedEmi)).toBe(true)
+    expect(result.apr.min == null || Number.isFinite(result.apr.min)).toBe(true)
+    expect(result.apr.max == null || Number.isFinite(result.apr.max)).toBe(true)
   })
 })

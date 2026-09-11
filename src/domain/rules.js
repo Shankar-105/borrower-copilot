@@ -21,9 +21,9 @@ const RATE_BASE = {
 
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
 const safeNumber = (value, fallback = 0) => Number.isFinite(Number(value)) ? Number(value) : fallback
-export const formatInr = (value) => `₹${Math.round(Math.max(0, safeNumber(value))).toLocaleString('en-IN')}`
-export const formatLakhs = (value) => `₹${(Math.max(0, safeNumber(value)) / 100000).toFixed(1)}L`
-export const formatPercent = (value) => `${safeNumber(value).toFixed(1)}%`
+export const formatInr = (value) => value == null ? '—' : `₹${Math.round(Math.max(0, safeNumber(value))).toLocaleString('en-IN')}`
+export const formatLakhs = (value) => value == null ? '—' : `₹${(Math.max(0, safeNumber(value)) / 100000).toFixed(1)}L`
+export const formatPercent = (value) => value == null ? 'Not available' : `${safeNumber(value).toFixed(1)}%`
 
 export function normalizeIncome(profile) {
   const monthly = safeNumber(profile.monthlyIncome)
@@ -167,6 +167,14 @@ function confidence(profile, normalized) {
   return { level: score >= 3 ? 'High' : score >= 2 ? 'Medium' : 'Low', score, reason: `${profile.creditScore == null ? 'Credit history is unavailable. ' : ''}${profile.incomeType !== 'salaried' ? 'Income is variable or partly undocumented. ' : ''}${rentStatus}${expenseStatus}${!safeNumber(profile.age) ? 'Age is unavailable. ' : ''}${profile.recentBounce ? 'A recent bounce makes the risk picture less settled. ' : ''}${profile.highCostDebt ? 'High-cost debt is present. ' : ''}${`Income was normalized to ${formatInr(normalized.monthly)}.`}`.trim() }
 }
 
+function hasRequiredInputs(profile) {
+  const incomeReady = profile.incomeType === 'salaried'
+    ? safeNumber(profile.monthlyIncome) > 0
+    : safeNumber(profile.incomeLow) > 0 && safeNumber(profile.incomeHigh) > 0
+  const rentReady = profile.housingType !== 'rent' || safeNumber(profile.monthlyRent) > 0
+  return safeNumber(profile.requestedAmount) > 0 && incomeReady && profile.existingEmi != null && profile.monthlyHouseholdExpenses != null && safeNumber(profile.age) > 0 && rentReady
+}
+
 function buildTenureTradeoff(principal, annualRate, tenure, maximumTenure) {
   const max = Math.min(RULES.maxTenureMonths, maximumTenure)
   const pool = [...new Set([12, 24, 36, 48, 60, 72, 84, tenure])]
@@ -190,6 +198,8 @@ export function evaluateBorrower(profile) {
   const normalized = normalizeIncome(profile)
   const otherHouseholdIncome = Math.max(0, safeNumber(profile.otherHouseholdIncome))
   const affordabilityResult = affordability(profile, normalized.monthly, otherHouseholdIncome)
+  const profileReady = hasRequiredInputs(profile)
+  if (!profileReady && !affordabilityResult.rentMissing) affordabilityResult.safeAvailable = null
   const route = productRoute(profile)
   const rate = rateBand(profile, route)
   const averageRate = (rate.min + rate.max) / 2
@@ -197,11 +207,11 @@ export function evaluateBorrower(profile) {
   const collateralCap = safeNumber(profile.collateralValue) * RULES.securedLtv
   const lenderIncomeAmount = calculateMaximumPrincipal(affordabilityResult.lenderAvailable, averageRate, tenure)
   const lenderAmount = route.key === 'lap' ? Math.min(lenderIncomeAmount, collateralCap) : lenderIncomeAmount
-  const safeAmount = calculateMaximumPrincipal(affordabilityResult.safeAvailable, averageRate, tenure)
+  const safeAmount = profileReady ? calculateMaximumPrincipal(affordabilityResult.safeAvailable, averageRate, tenure) : null
   const requested = Math.max(0, safeNumber(profile.requestedAmount))
   const absoluteFeasibleCeiling = Math.min(lenderAmount, safeAmount)
   const targetPrincipal = Math.min(requested, absoluteFeasibleCeiling)
-  const recommendedEmi = calculateEmi(targetPrincipal, averageRate, tenure)
+  const recommendedEmi = profileReady ? calculateEmi(targetPrincipal, averageRate, tenure) : null
   const stressIncome = normalized.monthly * (1 - RULES.stressIncomeDrop)
   const stressAffordability = affordability(profile, stressIncome, otherHouseholdIncome)
   const stressRateIncrease = route.key === 'lap' ? RULES.stressRateIncrease : 0
@@ -212,11 +222,13 @@ export function evaluateBorrower(profile) {
   const exceedsSafeCapacity = requested > safeAmount
   const exceedsLenderCapacity = requested > lenderAmount
   const requestedTooHigh = requested > absoluteFeasibleCeiling
-  const decision = noCapacity || severeDebt ? 'DON’T BORROW' : requestedTooHigh ? 'BORROW LESS' : 'BORROW'
-  const decisionReason = severeDebt
+  const decision = !profileReady ? 'INCOMPLETE' : noCapacity || severeDebt ? 'DON’T BORROW' : requestedTooHigh ? 'BORROW LESS' : 'BORROW'
+  const decisionReason = !profileReady
+    ? 'Complete the required questions to see a borrower-safe calculation.'
+    : severeDebt
     ? 'Existing high-cost debt and a recent bounce mean new borrowing could deepen the debt problem.'
     : noCapacity
-      ? 'The conservative monthly headroom is already used by existing commitments and household costs.'
+      ? 'The conservative monthly headroom is already used by existing commitments and stated household outgoings.'
       : requestedTooHigh && exceedsSafeCapacity && exceedsLenderCapacity
         ? `The request exceeds both your borrower-safe ceiling of ${formatLakhs(safeAmount)} and the lender-side estimate of ${formatLakhs(lenderAmount)}.`
         : requestedTooHigh && exceedsSafeCapacity
@@ -224,8 +236,8 @@ export function evaluateBorrower(profile) {
           : requestedTooHigh && exceedsLenderCapacity
             ? `The request exceeds the lender-side estimate of ${formatLakhs(lenderAmount)}, which is constrained by institutional affordability or collateral policy.`
             : 'The request fits inside both the lender-side estimate and the conservative borrower-safe ceiling.'
-  const aprLow = calculateApr(absoluteFeasibleCeiling, rate.min, tenure).apr
-  const aprHigh = calculateApr(absoluteFeasibleCeiling, rate.max, tenure).apr
+  const aprLow = absoluteFeasibleCeiling > 0 ? calculateApr(absoluteFeasibleCeiling, rate.min, tenure).apr : null
+  const aprHigh = absoluteFeasibleCeiling > 0 ? calculateApr(absoluteFeasibleCeiling, rate.max, tenure).apr : null
   const aprFee = absoluteFeasibleCeiling * RULES.processingFee
   const age = safeNumber(profile.age)
   const maximumTenure = age ? Math.max(RULES.minTenureMonths, Math.min(RULES.maxTenureMonths, (RULES.retirementAge - age) * 12)) : RULES.maxTenureMonths

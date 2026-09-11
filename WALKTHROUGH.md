@@ -31,7 +31,7 @@ Priya is salaried at ₹1,10,000/month, has ₹14,000 existing EMI, ₹28,000 re
 - Absolute feasible ceiling: ₹0
 - Safe EMI ceiling: ₹0/month
 - Rate: 9.5%–16.5%
-- APR: 0% because there is no feasible borrowing principal
+- APR: Not available because there is no feasible borrowing principal
 - Decision: `DON'T BORROW`
 
 The safe calculation is `₹1,10,000 × 40% - ₹14,000 - ₹28,000 - ₹10,000 = -₹8,000`, floored at zero. Her strong stated score improves the benchmark, but it does not override household outgoings. The stress case fails too: requested EMI is about ₹22,878 against ₹0 of stressed room.
