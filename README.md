@@ -31,14 +31,15 @@ npm run build
 
 The main domain logic is in [`src/domain/rules.js`](./src/domain/rules.js) and is separate from the React UI. Domain tests are in `src/domain/rules.test.js`.
 
-
-See `three-runs/` for the written run-throughs. Add the screenshots from the actual app beside each `run.md` before submission.
+See `three-runs/` for the written run-throughs. They document the questions asked, outputs, decision reasoning and Negotiation Card for the three challenge borrowers.
 
 ## Rules
 
 See [`RULES.md`](./RULES.md) for the current table of thresholds, bands, formulas, reasons and limits.
 
 Important: the rate bands, FOIR, LTV, processing fee and stress values are prototype judgements. They are not promises from any lender and are not presented as universal RBI rules.
+
+For a `DON'T BORROW` verdict, the UI shows ₹0 as the amount to borrow now. Any positive borrower-safe figure remains a mathematical capacity check, not a recommendation to take the loan.
 
 ## Five-minute walkthrough
 
