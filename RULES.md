@@ -1,26 +1,27 @@
 # Borrower Copilot — Rules
 
-This is a borrower self-assessment, not a lender approval model. Every important number should be traceable to an answer and a visible prototype rule.
+This is a borrower self-assessment, not a lender approval model. Every important number should be traceable to an answer and a visible prototype rule. The form blocks the assessment until all visible must questions have an answer; blank numeric inputs remain unknown rather than becoming zero.
 
 ## Central assumptions
 
-| Rule | Value | Type |
-|---|---:|---|
-| Lender FOIR | 50% | Prototype judgement |
-| Borrower-safe FOIR | 40% | Prototype judgement |
-| Processing fee | 2% | Prototype judgement |
-| Stress income drop | 15% | Illustrative judgement |
-| LAP stress rate increase | 2 percentage points | Illustrative judgement |
-| Tenure | 12–84 months; default 48 | Prototype assumption |
-| Retirement age | 60 | Prototype assumption |
-| Secured LTV cap | 50% | Illustrative judgement, not universal regulation |
-| Variable income normalization | Low + 35% of range | Prototype judgement |
+| What | Value | Why | Source |
+|---|---:|---|---|
+| Lender FOIR | 50% | Approximate institutional affordability ceiling | My judgement |
+| Borrower-safe FOIR | 40% | Leaves a buffer below the lender-side ceiling | My judgement |
+| Household expenses | Required monthly amount excluding rent and EMIs | Prevents owned housing from being treated as zero living cost | Borrower answer; used by this prototype |
+| Processing fee | 2% | Illustrative fee for the APR estimate | My judgement |
+| Stress income drop | 15% | Simple resilience scenario | My judgement |
+| LAP stress rate increase | 2 percentage points | Illustrative secured-rate stress | My judgement |
+| Tenure | 12–84 months; default 48 | Keeps the prototype within common retail planning ranges | My judgement |
+| Retirement age | 60 | Caps assumed repayment horizon | My judgement |
+| Secured LTV cap | 50% | Conservative planning cap, not universal regulation | My judgement |
+| Variable income normalization | Low + 35% of range | Avoids treating peak months as normal income | My judgement |
 
 These are not universal RBI rules or lender promises.
 
 ## Adaptive questions
 
-Must questions: purpose, loan type, requested amount, income type, income, existing EMI, housing type, age, and rent when housing is rented. A renter must enter a positive rent amount; an owned home uses zero rent because the borrower explicitly selected ownership.
+Must questions: purpose, loan type, requested amount, income type, income, existing EMI, household expenses excluding rent and EMIs, housing type, age, and rent when housing is rented. A renter must enter a positive rent amount; an owned home uses zero rent because the borrower explicitly selected ownership. A zero existing EMI is allowed as an explicit answer; an empty field is not.
 
 Additional questions: documented ITR income for self-employed borrowers, optional other household income, credit score, collateral, recent bounce, high-cost debt, and tenure. Each additional field changes safe capacity, route, rate, decision, confidence, or EMI/APR.
 
@@ -40,7 +41,7 @@ The documented base is not added to the range base. This avoids double-counting 
 
 ## Affordability
 
-Let `I` be normalized borrower income, `H` be optional other household income, `E` be existing EMI, and `R` be rent.
+Let `I` be normalized borrower income, `H` be optional other household income, `E` be existing EMI, `R` be rent, and `X` be monthly household expenses excluding rent and EMIs.
 
 Lender-side capacity deliberately uses only the borrower:
 
@@ -48,17 +49,15 @@ Lender-side capacity deliberately uses only the borrower:
 
 `lenderAvailable = max(0, lenderTotal - E)`
 
-Borrower-safe capacity uses household income and only the requested household outgoings:
+Borrower-safe capacity uses household income and the requested household outgoings:
 
 `householdIncome = I + H`
 
 `safeTotal = householdIncome × 40%`
 
-`safeAvailable = max(0, safeTotal - E - R)`
+`safeAvailable = max(0, safeTotal - E - R - X)`
 
-Other household income is optional and appears in additional questions. It is never added to lender capacity. Rent is counted only when housing type is `rent`; a missing renter rent sets safe capacity to zero rather than silently treating rent as free.
-
-The engine does not collect or assume general maintenance expenses.
+Other household income is optional and appears in additional questions. It is never added to lender capacity. Rent is counted only when housing type is `rent`; a missing renter rent sets safe capacity to zero rather than silently treating rent as free. `X` is required so an owned home is not treated as zero living cost.
 
 ## Rate bands
 
@@ -124,7 +123,7 @@ The unsecured `business` route remains reachable when a business borrower suppli
 
 For Anita, the high-cost debt plus recent bounce therefore produces **DON'T BORROW**. There is no productive-purpose exception.
 
-The stress case is shown separately. A failed stress case does not automatically change the base verdict because it is a resilience check; the borrower can see the failed buffer without the model pretending that stress is a new underwriting decision.
+The stress case is shown separately and explicitly says when the requested EMI exceeds stressed room. A failed stress case does not automatically change the base verdict because it is a resilience check, but the borrower is told not to accept the requested amount without changing the plan.
 
 ## Stress
 
@@ -132,7 +131,7 @@ The stress case is shown separately. A failed stress case does not automatically
 - For the secured/LAP route, the stress rate rises by 2 percentage points above the rate maximum. Other routes keep the selected fixed-rate assumption rather than assuming a contractual rate rise.
 - Requested EMI is compared with stressed safe monthly room.
 - Other household income remains as separately supplied rather than being silently stress-reduced.
-- Rent and existing EMI remain unchanged under stress.
+- Rent, household expenses and existing EMI remain unchanged under stress.
 
 ## APR
 
@@ -150,17 +149,17 @@ This is an illustrative APR for the fee model in this prototype, not a full lend
 
 Confidence falls when credit is unknown, income is non-salaried, a bounce exists, or age is unknown. A missing renter rent value is called out. The rate object also exposes a separate rate confidence based on credit/risk information.
 
-Unknown is never silently converted into a favourable zero. Unknown credit stays unknown and widens the rate band. Missing renter rent blocks the safe calculation until it is supplied.
+Unknown is never silently converted into a favourable zero. Unknown credit stays unknown and widens the rate band. Missing required must inputs block the assessment; missing renter rent blocks the safe calculation until it is supplied.
 
 ## What this prototype does not know
 
 - Bureau data
 - Actual lender underwriting
 - Lender-specific FOIR rules
-- General household maintenance expenses, which are intentionally outside this simplified V1 model
+- Exact household expenses beyond the monthly amount supplied by the borrower
 - Whether another household earner is a formal co-applicant
 - Actual collateral/title valuation
-- Exact lender rate cards and KFS charges
+- Exact lender rate cards and KFS charges; the card compares a nominal quote to the benchmark, while the displayed APR remains illustrative for the prototype ceiling
 - Whether the requested loan is affordable under facts not supplied by the borrower
 
 Those are limitations, not numbers the prototype should invent.

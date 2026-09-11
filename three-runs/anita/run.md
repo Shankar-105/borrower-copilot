@@ -15,23 +15,24 @@ Anita is 35 in Hubballi, earns ₹26,000–₹30,000 from delivery work and tail
 5. Lower income: ₹26,000
 6. Higher income: ₹30,000
 7. Existing EMI: ₹1,050
-8. Other household income: optional additional question; not supplied
-9. Housing: Own House
-10. Age: 35
+8. Household expenses excluding rent and EMIs: illustrative ₹8,000/month
+9. Other household income: optional additional question; not supplied
+10. Housing: Own House
+11. Age: 35
 
 ### Additional
 
 Credit score unknown, bounce Yes, high-cost debt Yes, preferred tenure 36 months. Collateral is not shown because this is not a secured route.
 
-There is no household-expense or maintenance question.
+The expense value is an illustrative sample assumption because the challenge brief does not provide it.
 
 ## Outputs
 
 - Normalized income: **₹27,400/month** using low + 35% of range
 - Lender-side estimate: **about ₹3.5L**
-- Borrower-safe amount: **about ₹2.7L**
-- Absolute feasible ceiling: **about ₹2.7L**
-- Mathematical safe EMI ceiling: **about ₹5,461/month**
+- Borrower-safe amount: **about ₹52k**
+- Absolute feasible ceiling: **about ₹52k**
+- Mathematical safe EMI ceiling: **about ₹1,910/month**
 - Rate: **14%–23%**
 - APR: **about 16.6%–27.5%**
 - Route: Two-wheeler loan
@@ -39,7 +40,7 @@ There is no household-expense or maintenance question.
 - Amount to borrow now: **₹0**
 - Confidence: Low
 
-The decision comes from the explicit severe-debt rule: high-cost debt plus a recent bounced EMI. The vehicle purpose does not override that guard. The positive safe amount and EMI are mathematical capacity checks only, not permission to take a new loan. The stress view separately drops income by 15%; because this is treated as a fixed-rate route, it does not add a rate increase.
+The decision comes from the explicit severe-debt rule: high-cost debt plus a recent bounced EMI. The vehicle purpose does not override that guard. The positive safe amount and EMI are mathematical capacity checks only, not permission to take a new loan. The stress case also fails: requested EMI is about ₹5,806 against ₹266 of stressed room.
 
 ## Negotiation Card
 

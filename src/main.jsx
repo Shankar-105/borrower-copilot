@@ -3,17 +3,19 @@ import { createRoot } from 'react-dom/client'
 import { evaluateBorrower, formatInr, formatLakhs, formatPercent, QUESTION_DEFINITIONS, RULES, SAMPLE_BORROWERS } from './domain/rules'
 import './styles.css'
 
-const blank = { name: '', age: 0, city: '', purpose: 'wedding', loanType: 'not-sure', requestedAmount: 500000, incomeType: 'salaried', monthlyIncome: 60000, incomeLow: 40000, incomeHigh: 60000, documentedAnnualIncome: 0, existingEmi: 0, otherHouseholdIncome: 0, housingType: 'own', monthlyRent: 0, creditScore: null, collateralValue: 0, recentBounce: false, highCostDebt: false, tenureMonths: 48 }
+const blank = { name: '', age: null, city: '', purpose: 'wedding', loanType: 'not-sure', requestedAmount: null, incomeType: 'salaried', monthlyIncome: null, incomeLow: null, incomeHigh: null, documentedAnnualIncome: null, existingEmi: null, monthlyHouseholdExpenses: null, otherHouseholdIncome: 0, housingType: 'own', monthlyRent: 0, creditScore: null, collateralValue: 0, recentBounce: false, highCostDebt: false, tenureMonths: 48 }
 const asValue = (key, value) => {
   if (['recentBounce', 'highCostDebt'].includes(key)) return value === 'true'
   if (key === 'creditScore') return value === '' ? null : Number(value)
-  if (['collateralValue', 'requestedAmount', 'monthlyIncome', 'incomeLow', 'incomeHigh', 'documentedAnnualIncome', 'existingEmi', 'otherHouseholdIncome', 'monthlyRent', 'tenureMonths', 'age'].includes(key)) return value === '' ? 0 : Number(value)
+  if (['collateralValue', 'requestedAmount', 'monthlyIncome', 'incomeLow', 'incomeHigh', 'documentedAnnualIncome', 'existingEmi', 'monthlyHouseholdExpenses', 'otherHouseholdIncome', 'monthlyRent', 'tenureMonths', 'age'].includes(key)) return value === '' ? null : Number(value)
   return value
 }
 
 function QuestionField({ question, profile, update }) {
   const rentMissing = question.id === 'monthlyRent' && !(Number(profile.monthlyRent) > 0)
-  return <label className="field" key={question.id}><span>{question.label}{question.optional && <small> optional</small>}{question.required && <small> required</small>}</span>{question.type === 'select' ? <select value={String(profile[question.id] ?? '')} onChange={(event) => update(question.id, event.target.value)}>{question.options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select> : <div className="input-wrap">{question.prefix && <b>{question.prefix}</b>}<input type="number" min={question.min ?? 0} max={question.max} required={question.required} aria-invalid={rentMissing} value={profile[question.id] ?? ''} onChange={(event) => update(question.id, event.target.value)} placeholder="Enter monthly rent" />{question.suffix && <b>{question.suffix}</b>}</div>}{rentMissing && <small className="field-error">Enter your monthly rent to continue. Owned homes do not use this field.</small>}<small className="affects">Affects {question.affects}</small></label>
+  const missing = question.required && (question.id === 'monthlyRent' ? rentMissing : profile[question.id] == null || profile[question.id] === '' || (question.id !== 'existingEmi' && Number(profile[question.id]) <= 0))
+  const placeholder = question.id === 'monthlyRent' ? 'Enter monthly rent' : question.id === 'monthlyHouseholdExpenses' ? 'Enter monthly expenses' : 'Enter an amount'
+  return <label className="field" key={question.id}><span>{question.label}{question.optional && <small> optional</small>}{question.required && <small> required</small>}</span>{question.type === 'select' ? <select value={String(profile[question.id] ?? '')} onChange={(event) => update(question.id, event.target.value)}>{question.options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select> : <div className="input-wrap">{question.prefix && <b>{question.prefix}</b>}<input type="number" min={question.min ?? 0} max={question.max} required={question.required} aria-invalid={missing} value={profile[question.id] ?? ''} onChange={(event) => update(question.id, event.target.value)} placeholder={placeholder} />{question.suffix && <b>{question.suffix}</b>}</div>}{missing && <small className="field-error">Enter this value to continue.</small>}<small className="affects">Affects {question.affects}</small></label>
 }
 
 function App() {
@@ -29,8 +31,14 @@ function App() {
     return next
   })
   const rentIsValid = profile.housingType !== 'rent' || Number(profile.monthlyRent) > 0
+  const mustQuestionsAreComplete = mustQuestions.every((question) => {
+    const value = profile[question.id]
+    if (question.id === 'monthlyRent') return rentIsValid
+    if (question.type !== 'number') return value != null && value !== ''
+    return value != null && value !== '' && (question.id === 'existingEmi' || Number(value) > 0)
+  })
   const setStage = (nextStage) => {
-    if (nextStage === 'result' && !rentIsValid) return
+    if (nextStage === 'result' && !mustQuestionsAreComplete) return
     setStageState(nextStage)
   }
   const loadSample = (name) => { setProfile({ ...blank, ...SAMPLE_BORROWERS[name] }); setStage('form') }
@@ -64,13 +72,16 @@ function TenureTradeoff({ result }) {
 
 function Metric({ label, value, detail, emphasis }) { return <div className={`metric ${emphasis ? 'emphasis' : ''}`}><span>{label}</span><strong>{value}</strong><small>{detail}</small></div> }
 function NegotiationCard({ result, quote, setQuote }) {
+  const [quoteApr, setQuoteApr] = useState('')
   const quoteNumber = Number(quote)
+  const quoteAprNumber = Number(quoteApr)
   const quoteMessage = quoteNumber > result.rate.max ? `Ask why ${quote}% is above your illustrative benchmark.` : quoteNumber < result.rate.min ? `This is below your illustrative benchmark. Check the full quote and fees before comparing.` : `This quote is within your illustrative benchmark. Compare the APR and fees too.`
+  const aprMessage = quoteApr && (quoteAprNumber > result.apr.max ? `The lender APR is above your illustrative ${formatPercent(result.apr.min)}–${formatPercent(result.apr.max)} ceiling benchmark.` : quoteAprNumber < result.apr.min ? `The lender APR is below the illustrative benchmark; confirm the quoted principal and fees are comparable.` : `The lender APR is within the illustrative benchmark. Confirm the quoted principal and all fees match this comparison.`)
   const cardAmountLabel = result.decision === 'DON’T BORROW' ? 'Amount to borrow now' : 'Recommended amount'
   const cardAmount = result.decision === 'DON’T BORROW' ? 0 : result.safeAmount
   const cardEmiLabel = result.decision === 'DON’T BORROW' ? 'EMI to carry now' : 'EMI ceiling'
   const cardEmi = result.decision === 'DON’T BORROW' ? 0 : result.recommendedEmi
-  return <aside className="negotiation-card"><div className="card-top"><span className="brand-mark small">B</span><span>Negotiation Card</span><span className="card-date">LOCAL / PRIVATE</span></div><h2>What I should carry into the lender conversation.</h2><div className="card-hero"><span>{cardAmountLabel}</span><strong>{formatLakhs(cardAmount)}</strong><small>{result.decision === 'DON’T BORROW' ? 'Do not take a new loan now. The mathematical safe ceiling is shown separately below.' : result.decisionReason}</small></div><div className="card-rows"><div><span>Lender-side estimate</span><b>{formatLakhs(result.lenderAmount)}</b></div><div><span>Borrower-safe amount</span><b>{formatLakhs(result.safeAmount)}</b></div><div><span>Fair rate</span><b>{formatPercent(result.rate.min)}–{formatPercent(result.rate.max)}</b></div><div><span>APR incl. fee</span><b>{formatPercent(result.apr.min)}–{formatPercent(result.apr.max)}</b></div><div><span>{cardEmiLabel}</span><b>{formatInr(cardEmi)}</b></div><div><span>Route</span><b>{result.route.product}</b></div></div><div className="quote-check"><label>Compare a lender quote<input value={quote} onChange={(event) => setQuote(event.target.value)} placeholder="e.g. 14" type="number" min="0" step="0.1" /><span>%</span></label>{quote && <p className={quoteNumber > result.rate.max ? 'quote-high' : quoteNumber < result.rate.min ? 'quote-low' : 'quote-ok'}>{quoteMessage}</p>}</div><div className="card-foot">Illustrative self-assessment only. Actual underwriting, pricing and fees vary by lender.</div></aside>
+  return <aside className="negotiation-card"><div className="card-top"><span className="brand-mark small">B</span><span>Negotiation Card</span><span className="card-date">LOCAL / PRIVATE</span></div><h2>What I should carry into the lender conversation.</h2><div className="card-hero"><span>{cardAmountLabel}</span><strong>{formatLakhs(cardAmount)}</strong><small>{result.decision === 'DON’T BORROW' ? 'Do not take a new loan now. The mathematical safe ceiling is shown separately below.' : result.decisionReason}</small></div><div className="card-rows"><div><span>Lender-side estimate</span><b>{formatLakhs(result.lenderAmount)}</b></div><div><span>Borrower-safe amount</span><b>{formatLakhs(result.safeAmount)}</b></div><div><span>Fair rate</span><b>{formatPercent(result.rate.min)}–{formatPercent(result.rate.max)}</b></div><div><span>APR incl. fee</span><b>{formatPercent(result.apr.min)}–{formatPercent(result.apr.max)}</b></div><div><span>{cardEmiLabel}</span><b>{formatInr(cardEmi)}</b></div><div><span>Route</span><b>{result.route.product}</b></div></div><div className="quote-check"><label>Compare lender nominal rate<input value={quote} onChange={(event) => setQuote(event.target.value)} placeholder="e.g. 14" type="number" min="0" step="0.1" /><span>%</span></label>{quote && <p className={quoteNumber > result.rate.max ? 'quote-high' : quoteNumber < result.rate.min ? 'quote-low' : 'quote-ok'}>{quoteMessage} Nominal rate is not APR.</p>}<label>Compare lender APR<input value={quoteApr} onChange={(event) => setQuoteApr(event.target.value)} placeholder="e.g. 16.5" type="number" min="0" step="0.1" /><span>%</span></label>{quoteApr && <p className={quoteAprNumber > result.apr.max ? 'quote-high' : quoteAprNumber < result.apr.min ? 'quote-low' : 'quote-ok'}>{aprMessage}</p>}</div><div className="card-foot">Illustrative self-assessment only. Compare APR using the same principal, tenure and all-in fee set as the lender quote.</div></aside>
 }
 
 createRoot(document.getElementById('root')).render(<App />)

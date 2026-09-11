@@ -43,7 +43,7 @@ describe('Borrower Copilot core rules', () => {
   })
 
   it('produces the required distinct challenge decisions', () => {
-    expect(evaluateBorrower(SAMPLE_BORROWERS.Priya).decision).toBe('BORROW LESS')
+    expect(evaluateBorrower(SAMPLE_BORROWERS.Priya).decision).toBe('DON’T BORROW')
     expect(evaluateBorrower(SAMPLE_BORROWERS.Ravi).decision).toBe('BORROW LESS')
     expect(evaluateBorrower(SAMPLE_BORROWERS.Anita).decision).toBe('DON’T BORROW')
   })

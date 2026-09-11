@@ -74,7 +74,8 @@ function affordability(profile, income, otherHouseholdIncome = 0) {
   const rentRequired = profile.housingType === 'rent'
   const rentObligation = rentRequired ? Math.max(0, safeNumber(profile.monthlyRent)) : 0
   const rentMissing = rentRequired && rentObligation <= 0
-  const borrowerOutgoings = rentObligation + existingEmi
+  const householdExpenses = Math.max(0, safeNumber(profile.monthlyHouseholdExpenses))
+  const borrowerOutgoings = rentObligation + householdExpenses + existingEmi
   const safeAvailable = rentMissing ? 0 : Math.max(0, safeTotal - borrowerOutgoings)
   return {
     existingEmi,
@@ -84,6 +85,7 @@ function affordability(profile, income, otherHouseholdIncome = 0) {
     safeAvailable,
     rentObligation,
     rentMissing,
+    householdExpenses,
     borrowerOutgoings,
     householdIncome,
     otherHouseholdIncome: Math.max(0, safeNumber(otherHouseholdIncome)),
@@ -161,7 +163,8 @@ function confidence(profile, normalized) {
   if (profile.recentBounce) score -= 1
   if (!safeNumber(profile.age)) score -= 1
   const rentStatus = profile.housingType === 'rent' && safeNumber(profile.monthlyRent) <= 0 ? 'Rent is missing, so the borrower-safe result is set to zero until it is supplied. ' : ''
-  return { level: score >= 3 ? 'High' : score >= 2 ? 'Medium' : 'Low', score, reason: `${profile.creditScore == null ? 'Credit history is unavailable. ' : ''}${profile.incomeType !== 'salaried' ? 'Income is variable or partly undocumented. ' : ''}${rentStatus}${!safeNumber(profile.age) ? 'Age is unavailable. ' : ''}${profile.recentBounce ? 'A recent bounce makes the risk picture less settled. ' : ''}${profile.highCostDebt ? 'High-cost debt is present. ' : ''}${`Income was normalized to ${formatInr(normalized.monthly)}.`}`.trim() }
+  const expenseStatus = profile.monthlyHouseholdExpenses == null ? 'Household expenses are missing. ' : ''
+  return { level: score >= 3 ? 'High' : score >= 2 ? 'Medium' : 'Low', score, reason: `${profile.creditScore == null ? 'Credit history is unavailable. ' : ''}${profile.incomeType !== 'salaried' ? 'Income is variable or partly undocumented. ' : ''}${rentStatus}${expenseStatus}${!safeNumber(profile.age) ? 'Age is unavailable. ' : ''}${profile.recentBounce ? 'A recent bounce makes the risk picture less settled. ' : ''}${profile.highCostDebt ? 'High-cost debt is present. ' : ''}${`Income was normalized to ${formatInr(normalized.monthly)}.`}`.trim() }
 }
 
 function buildTenureTradeoff(principal, annualRate, tenure, maximumTenure) {
@@ -229,9 +232,9 @@ export function evaluateBorrower(profile) {
   const tradeoffPrincipal = requested > absoluteFeasibleCeiling ? absoluteFeasibleCeiling : requested
   const tenureTradeoff = buildTenureTradeoff(tradeoffPrincipal, averageRate, tenure, maximumTenure)
   const tenureNote = age && tenure < safeNumber(profile.tenureMonths, tenure) ? `Tenure is limited to ${tenure} months using the ${RULES.retirementAge}-year age assumption.` : `Tenure used is ${tenure} months.`
-  const expenseNote = `Borrower safety uses only the stated household income, other household income, rent of ${formatInr(affordabilityResult.rentObligation)}, and existing EMI of ${formatInr(affordabilityResult.existingEmi)}; this leaves ${formatInr(affordabilityResult.safeAvailable)} for a new EMI.`
+  const expenseNote = `Borrower safety uses stated household income, other household income, rent of ${formatInr(affordabilityResult.rentObligation)}, household expenses of ${formatInr(affordabilityResult.householdExpenses)}, and existing EMI of ${formatInr(affordabilityResult.existingEmi)}; this leaves ${formatInr(affordabilityResult.safeAvailable)} for a new EMI.`
   const householdIncomeNote = otherHouseholdIncome > 0 ? `${formatInr(otherHouseholdIncome)} of other household income is included in the borrower-safe household calculation, but not in lender-side sanction capacity.` : 'No other household income is included in the safe household calculation.'
-  const stressExpenseNote = `Stress reduces normalized borrower income by ${RULES.stressIncomeDrop * 100}%; rent and existing EMI remain unchanged. ${route.key === 'lap' ? `The secured route also tests a ${RULES.stressRateIncrease * 100}-point rate rise.` : 'The selected fixed-rate route does not assume a contractual rate rise.'}`
+  const stressExpenseNote = `Stress reduces normalized borrower income by ${RULES.stressIncomeDrop * 100}%; rent, household expenses, and existing EMI remain unchanged. ${route.key === 'lap' ? `The secured route also tests a ${RULES.stressRateIncrease * 100}-point rate rise.` : 'The selected fixed-rate route does not assume a contractual rate rise.'} ${stress.survives ? 'The requested EMI remains inside stressed room.' : 'The requested EMI exceeds stressed room; do not accept this requested amount without changing the plan.'}`
   const leverageNote = route.key === 'lap' && collateralCap > 0
     ? `Your unencumbered collateral supports a lender-side cap of ${formatLakhs(collateralCap)}; ask the lender to explain any quote above the ${formatPercent(rate.min)}–${formatPercent(rate.max)} benchmark.`
     : profile.creditScore >= 750
@@ -267,25 +270,26 @@ export function evaluateBorrower(profile) {
 }
 
 export const SAMPLE_BORROWERS = {
-  Priya: { name: 'Priya', age: 29, city: 'Bengaluru', incomeType: 'salaried', monthlyIncome: 110000, existingEmi: 14000, otherHouseholdIncome: 0, housingType: 'rent', monthlyRent: 28000, creditScore: 780, requestedAmount: 800000, purpose: 'wedding', loanType: 'personal', tenureMonths: 48, recentBounce: false, highCostDebt: false, collateralValue: 0 },
-  Ravi: { name: 'Ravi', age: 42, city: 'Mysuru', incomeType: 'self-employed', monthlyIncome: 60000, incomeLow: 40000, incomeHigh: 80000, documentedAnnualIncome: 420000, existingEmi: 0, otherHouseholdIncome: 18000, housingType: 'own', monthlyRent: 0, creditScore: null, requestedAmount: 1500000, purpose: 'business', loanType: 'business', collateralValue: 4500000, tenureMonths: 60, recentBounce: false, highCostDebt: false },
-  Anita: { name: 'Anita', age: 35, city: 'Hubballi', incomeType: 'variable', incomeLow: 26000, incomeHigh: 30000, documentedAnnualIncome: 0, existingEmi: 1050, otherHouseholdIncome: 0, housingType: 'own', monthlyRent: 0, creditScore: null, requestedAmount: 150000, purpose: 'vehicle', loanType: 'vehicle', collateralValue: 0, tenureMonths: 36, recentBounce: true, highCostDebt: true },
+  Priya: { name: 'Priya', age: 29, city: 'Bengaluru', incomeType: 'salaried', monthlyIncome: 110000, existingEmi: 14000, monthlyHouseholdExpenses: 10000, otherHouseholdIncome: 0, housingType: 'rent', monthlyRent: 28000, creditScore: 780, requestedAmount: 800000, purpose: 'wedding', loanType: 'personal', tenureMonths: 48, recentBounce: false, highCostDebt: false, collateralValue: 0 },
+  Ravi: { name: 'Ravi', age: 42, city: 'Mysuru', incomeType: 'self-employed', monthlyIncome: 60000, incomeLow: 40000, incomeHigh: 80000, documentedAnnualIncome: 420000, existingEmi: 0, monthlyHouseholdExpenses: 8000, otherHouseholdIncome: 18000, housingType: 'own', monthlyRent: 0, creditScore: null, requestedAmount: 1500000, purpose: 'business', loanType: 'business', collateralValue: 4500000, tenureMonths: 60, recentBounce: false, highCostDebt: false },
+  Anita: { name: 'Anita', age: 35, city: 'Hubballi', incomeType: 'variable', incomeLow: 26000, incomeHigh: 30000, documentedAnnualIncome: 0, existingEmi: 1050, monthlyHouseholdExpenses: 8000, otherHouseholdIncome: 0, housingType: 'own', monthlyRent: 0, creditScore: null, requestedAmount: 150000, purpose: 'vehicle', loanType: 'vehicle', collateralValue: 0, tenureMonths: 36, recentBounce: true, highCostDebt: true },
 }
 
 export const QUESTION_DEFINITIONS = [
   { id: 'purpose', label: 'What are you borrowing for?', type: 'select', options: [['wedding', 'Wedding or family event'], ['business', 'Business or stock'], ['vehicle', 'Two-wheeler'], ['debt', 'Paying existing debt'], ['other', 'Something else']], affects: 'decision, route, rate', tier: 'must' },
   { id: 'loanType', label: 'What loan type are you considering?', type: 'select', options: [['not-sure', 'Not sure'], ['personal', 'Personal loan'], ['business', 'Business loan'], ['lap', 'Loan against property'], ['vehicle', 'Two-wheeler loan']], affects: 'route, rate', tier: 'must' },
-  { id: 'requestedAmount', label: 'How much do you want to borrow?', type: 'number', prefix: '₹', affects: 'decision, stress', tier: 'must' },
+  { id: 'requestedAmount', label: 'How much do you want to borrow?', type: 'number', prefix: '₹', required: true, affects: 'decision, stress', tier: 'must' },
   { id: 'incomeType', label: 'How does your income arrive?', type: 'select', options: [['salaried', 'Salaried'], ['self-employed', 'Self-employed'], ['variable', 'Informal or variable']], affects: 'normalization, rate, confidence', tier: 'must' },
-  { id: 'monthlyIncome', label: 'Your usual monthly take-home', type: 'number', prefix: '₹', visible: (profile) => profile.incomeType === 'salaried', affects: 'affordability', tier: 'must' },
-  { id: 'incomeLow', label: 'Lower monthly income', type: 'number', prefix: '₹', visible: (profile) => profile.incomeType !== 'salaried', affects: 'normalization, affordability', tier: 'must' },
-  { id: 'incomeHigh', label: 'Higher monthly income', type: 'number', prefix: '₹', visible: (profile) => profile.incomeType !== 'salaried', affects: 'normalization, affordability', tier: 'must' },
+  { id: 'monthlyIncome', label: 'Your usual monthly take-home', type: 'number', prefix: '₹', required: true, visible: (profile) => profile.incomeType === 'salaried', affects: 'affordability', tier: 'must' },
+  { id: 'incomeLow', label: 'Lower monthly income', type: 'number', prefix: '₹', required: true, visible: (profile) => profile.incomeType !== 'salaried', affects: 'normalization, affordability', tier: 'must' },
+  { id: 'incomeHigh', label: 'Higher monthly income', type: 'number', prefix: '₹', required: true, visible: (profile) => profile.incomeType !== 'salaried', affects: 'normalization, affordability', tier: 'must' },
   { id: 'documentedAnnualIncome', label: 'Annual documented income (ITR)', type: 'number', prefix: '₹', visible: (profile) => profile.incomeType === 'self-employed', affects: 'normalization, confidence', tier: 'additional' },
-  { id: 'existingEmi', label: 'Existing monthly EMIs', type: 'number', prefix: '₹', affects: 'affordability, decision', tier: 'must' },
+  { id: 'existingEmi', label: 'Existing monthly EMIs', type: 'number', prefix: '₹', required: true, affects: 'affordability, decision', tier: 'must' },
+  { id: 'monthlyHouseholdExpenses', label: 'Monthly household expenses, excluding rent and EMIs', type: 'number', prefix: '₹', required: true, affects: 'safe amount, decision, stress', tier: 'must' },
   { id: 'otherHouseholdIncome', label: 'Other household income you expect to rely on', type: 'number', prefix: '₹', optional: true, affects: 'safe amount, stress', tier: 'additional' },
   { id: 'housingType', label: 'Do you own your home or rent?', type: 'select', options: [['own', 'Own House'], ['rent', 'Rent']], affects: 'safe amount, confidence', tier: 'must' },
   { id: 'monthlyRent', label: 'Monthly rent', type: 'number', prefix: '₹', min: 1, required: true, visible: (profile) => profile.housingType === 'rent', affects: 'safe amount, confidence', tier: 'must' },
-  { id: 'age', label: 'Your age', type: 'number', min: 18, max: 80, affects: 'tenure, confidence', tier: 'must' },
+  { id: 'age', label: 'Your age', type: 'number', min: 18, max: 80, required: true, affects: 'tenure, confidence', tier: 'must' },
   { id: 'creditScore', label: 'Credit score, if known', type: 'number', visible: () => true, optional: true, affects: 'rate, confidence', tier: 'additional' },
   { id: 'collateralValue', label: 'Unencumbered property or collateral value', type: 'number', prefix: '₹', visible: (profile) => profile.incomeType === 'self-employed' || profile.purpose === 'business' || profile.loanType === 'lap', optional: true, affects: 'route, safe amount', tier: 'additional' },
   { id: 'recentBounce', label: 'Any EMI bounced in the last 6 months?', type: 'select', options: [['false', 'No'], ['true', 'Yes']], affects: 'decision, confidence', tier: 'additional' },

@@ -21,6 +21,7 @@ npm run dev
 Then open the local Vite URL shown in the terminal.
 
 There is no backend, login, database, API or credit-bureau pull. The answers stay in the browser.
+The form requires the visible minimum questions, including monthly household expenses excluding rent and EMIs. Blank numeric answers remain unknown and cannot be used to produce an assessment; an explicit zero existing EMI is valid.
 
 ## Build and test
 
