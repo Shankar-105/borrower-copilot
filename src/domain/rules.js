@@ -105,11 +105,11 @@ function creditAdjustment(profile, route) {
   if (route.key === 'lap' && status !== 'known') {
     return { minPoints: 0, maxPoints: 0, label: status === 'no-credit' ? 'no credit history; secured route limits the benchmark impact' : 'unknown credit history; secured route limits the benchmark impact', known: false }
   }
-  if (status === 'no-credit') return { minPoints: 2.5, maxPoints: 2.5, label: 'no credit history', known: false }
-  if (status !== 'known' || score == null) return { minPoints: 2, maxPoints: 3, label: 'unknown credit history', known: false }
-  if (score >= 750) return { minPoints: -1.5, maxPoints: -1.5, label: 'strong stated score', known: true }
-  if (score >= 700) return { minPoints: 0, maxPoints: 0, label: 'moderate stated score', known: true }
-  return { minPoints: 2.5, maxPoints: 2.5, label: 'weaker stated score', known: true }
+  if (status === 'no-credit') return { minPoints: 2.5, maxPoints: 2.5, label: 'no credit history', known: false, spread: 2 }
+  if (status !== 'known' || score == null) return { minPoints: 2, maxPoints: 3, label: 'unknown credit history', known: false, spread: 3 }
+  if (score >= 750) return { minPoints: -1.5, maxPoints: -1.5, label: 'strong stated score', known: true, spread: 0 }
+  if (score >= 700) return { minPoints: 0, maxPoints: 0, label: 'moderate stated score', known: true, spread: 1 }
+  return { minPoints: 2.5, maxPoints: 2.5, label: 'weaker stated score', known: true, spread: 2 }
 }
 
 function productRoute(profile) {
@@ -169,8 +169,15 @@ export function validateProfileInputs(profile) {
 function rateBand(profile, route) {
   const [baseMin, baseMax] = RATE_BASE[route.key]
   const credit = creditAdjustment(profile, route)
+  
+  // Logic: Confidence widens the range. 
+  // High confidence = tight band (base range). 
+  // Low confidence = widen the band by expanding the max.
+  const spreadModifier = credit.known ? 0 : (credit.spread || 2)
+  
   let min = baseMin + credit.minPoints
-  let max = baseMax + credit.maxPoints
+  let max = baseMax + credit.maxPoints + spreadModifier
+
   if (profile.incomeType !== 'salaried') { min += 1; max += 1 }
   const riskFlags = []
   if (profile.recentBounce === true) { riskFlags.push('recent bounced payment'); min += RULES.recentBounceRateAdd; max += RULES.recentBounceRateAdd }

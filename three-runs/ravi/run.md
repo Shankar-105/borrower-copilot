@@ -1,51 +1,29 @@
-# Ravi — current run-through
+# Ravi - Run-through
 
 ## Profile
+42 y/o, self-employed (Mysuru). Income: ₹40k-80k/month, ITR: ₹4.2L/year. Shop Value: ₹45L. Wife's income: ₹18k/month. Credit: Unknown. Wants ₹15L for business (60 months).
 
-Ravi is 42, a self-employed kirana owner in Mysuru. Cash income is ₹40,000–₹80,000/month, ITR income is ₹4,20,000/year, the shop is worth ₹45,00,000 and unencumbered, his wife earns ₹18,000/month, credit is unknown, and he requests ₹15,00,000 for business use over 60 months.
+## Questions
+**Must answer:**
+Purpose (Business), Loan Type (Business), Amount (₹15L), Income Type (Self-employed), Low Income (₹40k), High Income (₹80k), Existing EMI (₹0), Housing (Own), Age (42), Tenure (60m).
 
-## Questions shown — 16 total
+**Additional:**
+ITR Income (₹4.2L), Other income (₹18k), Credit Status (Unknown), Collateral (₹45L), Bounces (No), High-cost debt (No).
 
-### Must answer — 10
-
-1. Purpose: Business or stock
-2. Loan type: Business loan
-3. Requested amount: ₹15,00,000
-4. Income type: Self-employed
-5. Lower income: ₹40,000
-6. Higher income: ₹80,000
-7. Existing EMI: ₹0
-8. Housing: Own House
-9. Age: 42
-10. Preferred tenure: 60 months
-
-### Additional — 6
-
-1. Annual documented ITR income: ₹4,20,000
-2. Other household income: ₹18,000
-3. Credit status: I do not know my score
-4. Collateral: ₹45,00,000
-5. Recent bounce: No
-6. High-cost debt: No
-
-Monthly income adapts to self-employed input. ITR and collateral are shown because they can change normalization, route and lender-side capacity.
-
-## Outputs
-
-- Normalized borrower income: **₹35,000/month** from ITR income
-- Lender-side estimate: **about ₹7.7L**
-- Borrower-safe amount: **about ₹9.3L**
-- Absolute feasible ceiling: **about ₹7.7L**
-- Collateral cap: **₹22.5L**, not binding
-- Planned EMI at the ceiling: **₹17,500/month**
-- Rate: **11%–15%**
-- APR: **about 12.6%–17.1%**
-- Route: secured business/LAP
-- Decision: **BORROW LESS**
+## Results
+- Income: ₹35k/month (from ITR)
+- Lender Side: ~₹7.7L
+- Safe Amount: ~₹9.3L
+- Absolute Ceiling: ~₹7.7L
+- Collateral Cap: ₹22.5L (not binding)
+- EMI at ceiling: ~₹17.5k/month
+- Rate: 11%–15%
+- APR: ~12.6%–17.1%
+- Route: Secured Business / LAP
+- Verdict: BORROW LESS
 - Confidence: Low
 
-The lender calculation uses only Ravi's normalized ₹35,000 income. His wife's ₹18,000 is used only for borrower-safe capacity. The request exceeds lender-side capacity, so the absolute feasible ceiling is about ₹7.7L. The stress check is shown separately and does not change the base verdict.
+**Reasoning:** Lender only looks at his ₹35k income, not the wife's. While the property can back up to ₹22.5L, his income can only support ~₹7.7L. Since he asked for ₹15L, it's "Borrow Less".
 
-## Negotiation Card
-
-The card uses about ₹7.7L as the conservative planning ceiling and ₹17,500 as the EMI at that ceiling. It also shows the ₹22.5L collateral cap, the 11%–15% illustrative benchmark and APR so Ravi can compare a lender quote without assuming the property itself makes the full ₹15L request affordable.
+## Card
+Recommended amount ~₹7.7L, EMI ~₹17.5k. Shows the collateral cap (₹22.5L) and the 11%–15% benchmark so he knows the property helps the route, but not the monthly payment.
