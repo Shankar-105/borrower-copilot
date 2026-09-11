@@ -13,8 +13,10 @@ It also gives a one-screen Negotiation Card.
 
 ## Run locally
 
+Use Node.js 20.19+ (or a newer supported Node release).
+
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -22,9 +24,9 @@ Then open the local Vite URL shown in the terminal.
 
 There is no backend, login, database, API or credit-bureau pull. The answers stay in the browser.
 
-The core form has a small must-answer set: purpose, loan type, requested amount, income type and the matching income fields, existing EMI, housing type, rent when renting, age and preferred tenure. Rent can be ₹0, but a renter must explicitly answer the field. Preferred tenure is required because EMI and APR depend on it.
+The core form has a small must-answer set: purpose, loan type, requested amount, income type and the matching income fields, existing EMI, housing type, rent when renting, age and preferred tenure. New assessments start these required choices blank so the borrower must explicitly answer them. Rent can be ₹0, but a renter must explicitly answer the field. Preferred tenure is required because EMI and APR depend on it.
 
-Additional questions adapt to the profile. Self-employed borrowers can provide documented ITR income and collateral; other household income is optional; credit status separates known score, unknown score and no credit history; the score field appears only for a known score. Risk questions cover recent bounce and high-cost debt.
+Additional questions adapt to the profile. Self-employed borrowers can provide documented ITR income and collateral; other household income is optional; credit status separates known score, unknown score and no credit history; the score field appears only for a known score. Risk questions cover recent bounce and high-cost debt and can be left unanswered, which lowers confidence rather than being treated as a clean "No".
 
 ## Build and test
 
