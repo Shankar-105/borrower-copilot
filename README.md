@@ -16,7 +16,7 @@ It also gives a one-screen Negotiation Card.
 Use Node.js 20.19+ (or a newer supported Node release).
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
