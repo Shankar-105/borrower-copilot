@@ -83,16 +83,12 @@ These are prototype planning bands, not lender quotes.
 
 Recent bounce and high-cost debt are **risk flags**, not stacked fair-rate penalties. They remain visible and can trigger the `DON'T BORROW` guard. The rate band remains a negotiation benchmark; severe debt risk is handled in the borrowing decision rather than being used to make a punitive quote look fair.
 
-## Rate adjustments
-
-Credit 750+ shifts the band down 1.5 points. Credit 700–749 leaves it unchanged. Below 700 adds 2.5 points. Unknown credit adds 2 points to the minimum and 3 to the maximum, except secured LAP where collateral offsets that thin-file markup. Non-salaried income adds 1 point to both bounds. Recent bounce and high-cost debt remain visible risk flags and do not stack punitive rate points.
-
 ## Amounts and decisions
 
 The app keeps the two required O2 numbers:
 
 - **Lender-side capacity**: what the prototype estimates a lender may size.
-- **Borrower-safe amount**: what the household can safely carry under the safe FOIR/expense rules.
+- **Borrower-safe amount**: what the household can safely carry under the safe FOIR and stated rent/EMI rules.
 
 For secured/LAP routes, lender-side capacity also respects the collateral LTV cap.
 
@@ -105,6 +101,8 @@ This is the single conservative maximum planning principal. The recommended/prac
 The displayed recommended EMI is calculated from `targetPrincipal`.
 
 The borrower should use the borrower-safe/absolute-feasible side, not the lender-side estimate, when deciding what they can actually carry.
+
+If the verdict is `DON'T BORROW`, the app deliberately presents **₹0 as the amount to borrow now** in the live preview and Negotiation Card. The positive borrower-safe amount remains visible only as a mathematical capacity check, so it cannot be mistaken for permission to borrow while the stop condition applies.
 
 ## Product routing
 
@@ -152,7 +150,7 @@ This is an illustrative APR for the fee model in this prototype, not a full lend
 
 Confidence falls when credit is unknown, income is non-salaried, a bounce exists, or age is unknown. A missing renter rent value is called out. The rate object also exposes a separate rate confidence based on credit/risk information.
 
-Unknown is never treated as zero. Unknown credit stays unknown and widens the rate band. Unknown expenses use the visible maintenance floor and lower confidence.
+Unknown is never silently converted into a favourable zero. Unknown credit stays unknown and widens the rate band. Missing renter rent blocks the safe calculation until it is supplied.
 
 ## What this prototype does not know
 
