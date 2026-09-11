@@ -31,15 +31,16 @@ There is no household-expense or maintenance question.
 - Lender-side estimate: **about ₹3.5L**
 - Borrower-safe amount: **about ₹2.7L**
 - Absolute feasible ceiling: **about ₹2.7L**
-- Safe EMI ceiling: **about ₹5,461/month**
+- Mathematical safe EMI ceiling: **about ₹5,461/month**
 - Rate: **14%–23%**
 - APR: **about 16.6%–27.5%**
 - Route: Two-wheeler loan
 - Decision: **DON'T BORROW**
+- Amount to borrow now: **₹0**
 - Confidence: Low
 
-The decision comes from the explicit severe-debt rule: high-cost debt plus a recent bounced EMI. The vehicle purpose does not override that guard. The stress view separately drops income by 15%; because this is treated as a fixed-rate route, it does not add a rate increase.
+The decision comes from the explicit severe-debt rule: high-cost debt plus a recent bounced EMI. The vehicle purpose does not override that guard. The positive safe amount and EMI are mathematical capacity checks only, not permission to take a new loan. The stress view separately drops income by 15%; because this is treated as a fixed-rate route, it does not add a rate increase.
 
 ## Negotiation Card
 
-The card shows the separate lender-side estimate, borrower-safe amount, rate range, illustrative APR, EMI ceiling, and risk flags. It tells Anita not to use the mathematical capacity as permission to take a new loan while high-cost debt and repayment stress remain unresolved.
+The card's primary amount-to-borrow-now field is ₹0 and its EMI-to-carry-now field is ₹0. The lender-side estimate and borrower-safe amount remain visible as separate reference numbers, with the safe amount clearly treated as a mathematical capacity check. It also shows the rate range, illustrative APR, route, and risk explanation.
