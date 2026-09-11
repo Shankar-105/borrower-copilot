@@ -3,9 +3,9 @@ import { createRoot } from 'react-dom/client'
 import { evaluateBorrower, formatInr, formatLakhs, formatPercent, QUESTION_DEFINITIONS, RULES, SAMPLE_BORROWERS, validateProfileInputs } from './domain/rules'
 import './styles.css'
 
-const blank = { name: '', age: null, city: '', purpose: 'wedding', loanType: 'not-sure', requestedAmount: null, incomeType: 'salaried', monthlyIncome: null, incomeLow: null, incomeHigh: null, documentedAnnualIncome: null, existingEmi: null, otherHouseholdIncome: null, housingType: 'own', monthlyRent: null, creditStatus: 'unknown', creditScore: null, collateralValue: 0, recentBounce: false, highCostDebt: false, tenureMonths: null }
+const blank = { name: '', age: null, city: '', purpose: '', loanType: '', requestedAmount: null, incomeType: '', monthlyIncome: null, incomeLow: null, incomeHigh: null, documentedAnnualIncome: null, existingEmi: null, otherHouseholdIncome: null, housingType: '', monthlyRent: null, creditStatus: 'unknown', creditScore: null, collateralValue: 0, recentBounce: null, highCostDebt: null, tenureMonths: null }
 const asValue = (key, value) => {
-  if (['recentBounce', 'highCostDebt'].includes(key)) return value === 'true'
+  if (['recentBounce', 'highCostDebt'].includes(key)) return value === '' ? null : value === 'true'
   if (['creditScore', 'collateralValue', 'requestedAmount', 'monthlyIncome', 'incomeLow', 'incomeHigh', 'documentedAnnualIncome', 'existingEmi', 'otherHouseholdIncome', 'monthlyRent', 'tenureMonths', 'age'].includes(key)) return value === '' ? null : Number(value)
   return value
 }
