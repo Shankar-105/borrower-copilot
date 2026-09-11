@@ -12,11 +12,11 @@
     "node": ">=20.19.0"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "6.1.1",
-    "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "vite": "8.2.2",
-    "vitest": "5.0.0"
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "vitest": "latest"
   },
   "devDependencies": {}
 }
