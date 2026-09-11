@@ -69,7 +69,8 @@ describe('Borrower Copilot core rules', () => {
     expect(ravi).toContain('collateralValue')
     expect(anita).not.toContain('documentedAnnualIncome')
     expect(anita).not.toContain('collateralValue')
-    expect(priya).not.toContain('creditScore')
+    expect(priya).toContain('creditScore')
+    expect(visible({ ...SAMPLE_BORROWERS.Priya, creditStatus: 'unknown', creditScore: null })).not.toContain('creditScore')
   })
 
   it('routes Ravi to secured finance and respects the collateral cap', () => {

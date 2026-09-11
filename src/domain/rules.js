@@ -176,7 +176,7 @@ function rateBand(profile, route) {
   if (profile.recentBounce === true) { riskFlags.push('recent bounced payment'); min += RULES.recentBounceRateAdd; max += RULES.recentBounceRateAdd }
   if (profile.highCostDebt === true) { riskFlags.push('high-cost debt'); min += RULES.highCostDebtRateAdd; max += RULES.highCostDebtRateAdd }
   const confidence = credit.known && !profile.recentBounce && !profile.highCostDebt ? 'High' : credit.known ? 'Medium' : 'Low'
-  const riskText = riskFlags.length ? ` Risk flags raise the benchmark by ${formatPercent((profile.recentBounce ? RULES.recentBounceRateAdd : 0) + (profile.highCostDebt ? RULES.highCostDebtRateAdd : 0)} and also affect the borrowing decision where applicable.` : ''
+  const riskText = riskFlags.length ? ` Risk flags raise the benchmark by ${formatPercent((profile.recentBounce ? RULES.recentBounceRateAdd : 0) + (profile.highCostDebt ? RULES.highCostDebtRateAdd : 0))} and also affect the borrowing decision where applicable.` : ''
   return {
     min,
     max,
