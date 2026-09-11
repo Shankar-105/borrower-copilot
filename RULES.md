@@ -21,9 +21,9 @@ These are not universal RBI rules or lender promises.
 
 ## Adaptive questions
 
-Must questions: purpose, loan type, requested amount, income type, income, existing EMI, household expenses excluding rent and EMIs, housing type, age, and rent when housing is rented. A renter must enter a positive rent amount; an owned home uses zero rent because the borrower explicitly selected ownership. A zero existing EMI is allowed as an explicit answer; an empty field is not.
+Must questions: purpose, loan type, requested amount, income type, income, existing EMI, household expenses excluding rent and EMIs, housing type, age, rent when housing is rented, and preferred tenure. A renter must enter a positive rent amount; an owned home uses zero rent because the borrower explicitly selected ownership. A zero existing EMI is allowed as an explicit answer; an empty field is not.
 
-Additional questions: documented ITR income for self-employed borrowers, optional other household income, credit score, collateral, recent bounce, high-cost debt, and tenure. Each additional field changes safe capacity, route, rate, decision, confidence, or EMI/APR.
+Additional questions: documented ITR income for self-employed borrowers, optional other household income, and credit score. Each additional field changes safe capacity, route, rate, decision, confidence, or EMI/APR.
 
 ## Income normalization
 

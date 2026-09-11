@@ -92,6 +92,122 @@ function affordability(profile, income, otherHouseholdIncome = 0) {
   }
 }
 
+function isCreditScoreNoCredit(profile) {
+  // Returns true if borrower has no credit history (not applicable for secured loans)
+  return profile.creditScore == null && profile.loanType !== 'lap' && profile.purpose !== 'business'
+}
+
+function isCreditScoreValid(profile) {
+  // Returns true if credit score is valid (provided and within range)
+  if (profile.creditScore == null) return false
+  const score = Number(profile.creditScore)
+  return !isNaN(score) && score >= 300 && score <= 900
+}
+
+function validateProfileInputs(profile) {
+  const errors = []
+  
+  // Validate required numeric fields
+  if (profile.requestedAmount != null && Number(profile.requestedAmount) <= 0) {
+    errors.push('Requested amount must be positive')
+  }
+  
+  if (profile.incomeType === 'salaried') {
+    if (profile.monthlyIncome == null || Number(profile.monthlyIncome) <= 0) {
+      errors.push('Monthly income is required for salaried borrowers')
+    }
+  } else {
+    if (profile.incomeLow == null || Number(profile.incomeLow) <= 0) {
+      errors.push('Lower monthly income is required for non-salaried borrowers')
+    }
+    if (profile.incomeHigh == null || Number(profile.incomeHigh) <= 0) {
+      errors.push('Higher monthly income is required for non-salaried borrowers')
+    }
+    if (profile.incomeLow > profile.incomeHigh) {
+      errors.push('Lower income cannot be greater than higher income')
+    }
+  }
+  
+  if (profile.existingEmi == null) {
+    errors.push('Existing EMI is required')
+  } else if (Number(profile.existingEmi) < 0) {
+    errors.push('Existing EMI cannot be negative')
+  }
+  
+  if (profile.monthlyHouseholdExpenses == null) {
+    errors.push('Monthly household expenses are required')
+  } else if (Number(profile.monthlyHouseholdExpenses) < 0) {
+    errors.push('Monthly household expenses cannot be negative')
+  }
+  
+  if (profile.age == null || Number(profile.age) < 18 || Number(profile.age) > 80) {
+    errors.push('Age must be between 18 and 80')
+  }
+  
+  if (profile.housingType === 'rent') {
+    if (profile.monthlyRent == null || Number(profile.monthlyRent) <= 0) {
+      errors.push('Monthly rent is required for renters and must be positive')
+    }
+  }
+  
+  // Validate credit score if provided - distinguish between "no credit" and "unknown"
+  if (profile.creditScore != null) {
+    const score = Number(profile.creditScore)
+    if (isNaN(score)) {
+      errors.push('Credit score must be a valid number if provided')
+    } else if (score < 300 || score > 900) {
+      errors.push('Credit score must be between 300 and 900 if provided')
+    }
+  }
+  
+  // Validate other household income if provided
+  if (profile.otherHouseholdIncome != null) {
+    if (Number(profile.otherHouseholdIncome) < 0) {
+      errors.push('Other household income cannot be negative')
+    }
+  }
+  
+  // Validate collateral value if provided
+  if (profile.collateralValue != null) {
+    if (Number(profile.collateralValue) < 0) {
+      errors.push('Collateral value cannot be negative')
+    }
+  }
+  
+  return errors
+}
+
+function getCreditScoreLabel(profile, route) {
+  if (profile.creditScore == null && route.key === 'lap') {
+    return 'thin credit file offset by secured collateral'
+  }
+  if (profile.creditScore == null) {
+    if (isCreditScoreNoCredit(profile)) {
+      return 'no credit history'
+    }
+    return 'unknown credit history'
+  }
+  if (profile.creditScore >= 750) return 'strong stated score'
+  if (profile.creditScore >= 700) return 'moderate stated score'
+  return 'weaker stated score'
+}
+
+function getCreditScoreAdjustment(profile, route) {
+  const normalizedScore = normalizeCreditScore(profile)
+  if (normalizedScore == null && route.key === 'lap') {
+    return { minPoints: 0, maxPoints: 0, known: false }
+  }
+  if (normalizedScore == null) {
+    if (isCreditScoreNoCredit(profile)) {
+      return { minPoints: 2.5, maxPoints: 2.5, known: false }
+    }
+    return { minPoints: 2, maxPoints: 3, known: false }
+  }
+  if (normalizedScore >= 750) return { minPoints: -1.5, maxPoints: -1.5, known: true }
+  if (normalizedScore >= 700) return { minPoints: 0, maxPoints: 0, known: true }
+  return { minPoints: 2.5, maxPoints: 2.5, known: true }
+}
+
 function productRoute(profile) {
   const loanType = profile.loanType
   if (profile.collateralValue > 0 && (loanType === 'lap' || loanType === 'business' || profile.purpose === 'business')) {
@@ -103,10 +219,18 @@ function productRoute(profile) {
 }
 
 function creditAdjustment(profile, route) {
-  if (profile.creditScore == null && route.key === 'lap') return { minPoints: 0, maxPoints: 0, label: 'thin credit file offset by secured collateral', known: false }
-  if (profile.creditScore == null) return { minPoints: 2, maxPoints: 3, label: 'unknown credit history', known: false }
-  if (profile.creditScore >= 750) return { minPoints: -1.5, maxPoints: -1.5, label: 'strong stated score', known: true }
-  if (profile.creditScore >= 700) return { minPoints: 0, maxPoints: 0, label: 'moderate stated score', known: true }
+  const normalizedScore = normalizeCreditScore(profile)
+  if (normalizedScore == null && route.key === 'lap') {
+    return { minPoints: 0, maxPoints: 0, label: 'thin credit file offset by secured collateral', known: false }
+  }
+  if (normalizedScore == null) {
+    if (isCreditScoreNoCredit(profile)) {
+      return { minPoints: 2.5, maxPoints: 2.5, label: 'no credit history', known: false }
+    }
+    return { minPoints: 2, maxPoints: 3, label: 'unknown credit history', known: false }
+  }
+  if (normalizedScore >= 750) return { minPoints: -1.5, maxPoints: -1.5, label: 'strong stated score', known: true }
+  if (normalizedScore >= 700) return { minPoints: 0, maxPoints: 0, label: 'moderate stated score', known: true }
   return { minPoints: 2.5, maxPoints: 2.5, label: 'weaker stated score', known: true }
 }
 
@@ -158,13 +282,27 @@ function calculateApr(principal, annualRate, tenureMonths) {
 
 function confidence(profile, normalized) {
   let score = 3
+  const validationErrors = validateProfileInputs(profile)
+  
+  // Deduct points for validation errors
   if (profile.creditScore == null) score -= 1
   if (profile.incomeType !== 'salaried') score -= 1
   if (profile.recentBounce) score -= 1
   if (!safeNumber(profile.age)) score -= 1
+  
+  // Additional confidence deductions for specific risk factors
+  if (profile.highCostDebt) score -= 0.5
+  if (profile.collateralValue > 0 && profile.incomeType !== 'salaried') score -= 0.5
+  
   const rentStatus = profile.housingType === 'rent' && safeNumber(profile.monthlyRent) <= 0 ? 'Rent is missing, so the borrower-safe result is set to zero until it is supplied. ' : ''
   const expenseStatus = profile.monthlyHouseholdExpenses == null ? 'Household expenses are missing. ' : ''
-  return { level: score >= 3 ? 'High' : score >= 2 ? 'Medium' : 'Low', score, reason: `${profile.creditScore == null ? 'Credit history is unavailable. ' : ''}${profile.incomeType !== 'salaried' ? 'Income is variable or partly undocumented. ' : ''}${rentStatus}${expenseStatus}${!safeNumber(profile.age) ? 'Age is unavailable. ' : ''}${profile.recentBounce ? 'A recent bounce makes the risk picture less settled. ' : ''}${profile.highCostDebt ? 'High-cost debt is present. ' : ''}${`Income was normalized to ${formatInr(normalized.monthly)}.`}`.trim() }
+  const validationStatus = validationErrors.length > 0 ? `Validation issues: ${validationErrors.join(', ')}. ` : ''
+  
+  return { 
+    level: score >= 3 ? 'High' : score >= 2 ? 'Medium' : 'Low', 
+    score, 
+    reason: `${validationStatus}${profile.creditScore == null ? 'Credit history is unavailable. ' : ''}${profile.incomeType !== 'salaried' ? 'Income is variable or partly undocumented. ' : ''}${rentStatus}${expenseStatus}${!safeNumber(profile.age) ? 'Age is unavailable. ' : ''}${profile.recentBounce ? 'A recent bounce makes the risk picture less settled. ' : ''}${profile.highCostDebt ? 'High-cost debt is present. ' : ''}${`Income was normalized to ${formatInr(normalized.monthly)}.`}`.trim() 
+  }
 }
 
 function hasRequiredInputs(profile) {
@@ -173,6 +311,13 @@ function hasRequiredInputs(profile) {
     : safeNumber(profile.incomeLow) > 0 && safeNumber(profile.incomeHigh) > 0
   const rentReady = profile.housingType !== 'rent' || safeNumber(profile.monthlyRent) > 0
   return safeNumber(profile.requestedAmount) > 0 && incomeReady && profile.existingEmi != null && profile.monthlyHouseholdExpenses != null && safeNumber(profile.age) > 0 && rentReady
+}
+
+function normalizeCreditScore(profile) {
+  if (profile.creditScore == null) return null
+  const score = Number(profile.creditScore)
+  if (isNaN(score) || score < 300 || score > 900) return null
+  return score
 }
 
 function buildTenureTradeoff(principal, annualRate, tenure, maximumTenure) {
@@ -215,7 +360,7 @@ export function evaluateBorrower(profile) {
   const stressIncome = normalized.monthly * (1 - RULES.stressIncomeDrop)
   const stressAffordability = affordability(profile, stressIncome, otherHouseholdIncome)
   const stressRateIncrease = route.key === 'lap' ? RULES.stressRateIncrease : 0
-  const stressEmi = calculateEmi(requested, rate.max + stressRateIncrease * 100, tenure)
+  const stressEmi = calculateEmi(targetPrincipal, rate.max + stressRateIncrease * 100, tenure)
   const stress = { income: stressIncome, householdIncome: stressAffordability.householdIncome, safeAvailable: stressAffordability.safeAvailable, requestedEmi: stressEmi, survives: stressEmi <= stressAffordability.safeAvailable }
   const severeDebt = profile.highCostDebt === true && profile.recentBounce === true
   const noCapacity = affordabilityResult.safeAvailable <= 0
@@ -306,5 +451,5 @@ export const QUESTION_DEFINITIONS = [
   { id: 'collateralValue', label: 'Unencumbered property or collateral value', type: 'number', prefix: '₹', visible: (profile) => profile.incomeType === 'self-employed' || profile.purpose === 'business' || profile.loanType === 'lap', optional: true, affects: 'route, safe amount', tier: 'additional' },
   { id: 'recentBounce', label: 'Any EMI bounced in the last 6 months?', type: 'select', options: [['false', 'No'], ['true', 'Yes']], affects: 'decision, confidence', tier: 'additional' },
   { id: 'highCostDebt', label: 'Any app or short-term debt above 24%?', type: 'select', options: [['false', 'No'], ['true', 'Yes']], affects: 'decision, confidence', tier: 'additional' },
-  { id: 'tenureMonths', label: 'Preferred tenure', type: 'select', options: [['24', '2 years'], ['36', '3 years'], ['48', '4 years'], ['60', '5 years'], ['84', '7 years']], affects: 'EMI, APR, safe amount', tier: 'additional' },
+  { id: 'tenureMonths', label: 'Preferred tenure', type: 'select', options: [['24', '2 years'], ['36', '3 years'], ['48', '4 years'], ['60', '5 years'], ['84', '7 years']], affects: 'EMI, APR, safe amount', tier: 'must' },
 ]
