@@ -60,6 +60,16 @@ The final result is a **Negotiation Card**. It doesn't just give a number; it gi
 - **Tenure Trade-off:** The app shows how changing the tenure (e.g., from 3 to 5 years) affects the EMI and the total interest paid.
 - **Stress Test:** We simulate a $15\%$ income drop. If the EMI no longer fits in the safe room, the app warns the borrower that the loan is "unstable."
 
+## Future Roadmap: What I'd build next
+If I had more time, I'd focus on these three areas:
+1. **Actual Bureau Integration:** Right now, the user self-reports their score. Integrating an API (like Experian or CIBIL) would remove the "known/unknown" guesswork and make the rate bands precise.
+2. **Expense Granularity:** Instead of just "Rent," I'd add a "Basic Survival Budget" input. Currently, we assume a $40\%$ FOIR is safe, but for someone in a low-cost city vs. Mumbai, that $40\%$ means very different things.
+3. **Loan Comparison Tool:** Allow borrowers to upload a PDF of a sanction letter, parse the nominal rate and fees, and instantly compare it against the "Fair Rate" benchmark on the card.
+
+## What I'd cut
+1. **The "Lender-side" estimate for "Don't Borrow" cases:** When the verdict is `DON'T BORROW`, showing a potential sanction amount can be misleading or tempting for someone already in a debt trap. I'd hide it entirely to avoid encouraging risky borrowing.
+2. **Complex Income Ranges for Salaried:** For salaried users, the "Low/High" range is irrelevant. I'd streamline the UI to completely hide any mention of ranges for them to reduce cognitive load.
+
 ## Summary of Engineering Choices
 - **Separation of Concerns:** UI (React) $\leftrightarrow$ Logic (`rules.js`).
 - **Conservative Defaults:** "Unknown" is never treated as zero; it's treated as a risk that widens the rate band.
