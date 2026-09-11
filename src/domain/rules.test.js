@@ -54,6 +54,13 @@ describe('Borrower Copilot core rules', () => {
     expect(result.absoluteFeasibleCeiling).toBe(result.safeAmount)
   })
 
+  it('calculates APR and fee from the binding lender-side ceiling', () => {
+    const result = evaluateBorrower({ ...SAMPLE_BORROWERS.Priya, otherHouseholdIncome: 200000 })
+    expect(result.safeAmount).toBeGreaterThan(result.lenderAmount)
+    expect(result.absoluteFeasibleCeiling).toBe(result.lenderAmount)
+    expect(result.apr.fee).toBeCloseTo(result.absoluteFeasibleCeiling * RULES.processingFee, 6)
+  })
+
   it('does not emit invalid money values for an empty profile', () => {
     const result = evaluateBorrower({ incomeType: 'variable', requestedAmount: 100000, tenureMonths: 48 })
     const values = [result.lenderAmount, result.safeAmount, result.recommendedEmi, result.apr.min, result.apr.max]
