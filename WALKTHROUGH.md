@@ -1,67 +1,77 @@
 # Five-minute walkthrough
 
-## What I built
+## Product
 
-Borrower Copilot is a local borrower self-assessment. A borrower enters the information they know and gets four answers: whether to borrow, a lender-side amount and a safer amount, a rate range with an illustrative APR, and an EMI ceiling with a stress case.
+Borrower Copilot is a local borrower self-assessment for the four Lokta outputs: borrow/don't borrow/borrow less, lender-side versus borrower-safe amount, fair rate and APR range, and EMI ceiling with stress. It has no backend, login, bureau pull, or stored personal data.
 
-The question flow follows the challenge's two tiers. The must-set is kept small enough to produce all four outputs. Extra questions appear when they can tighten a number, route, decision, or confidence. A renter must provide a positive rent value before the result can be opened.
+The flow is adaptive. Must questions collect purpose, loan type, requested amount, income type, income, existing EMI, housing, age, and rent when the borrower selects renting. Additional questions include ITR income, optional other household income, credit score, collateral, repayment risk, and tenure.
 
-The result also shows a tenure trade-off with EMI and total interest, plus a Negotiation Card with a lender quote comparison.
+## Core affordability
 
-There is no login, backend, bureau pull or stored personal data.
+Lender-side capacity uses only borrower normalized income and existing EMI:
+
+`lenderAvailable = max(0, income × 50% - existingEmi)`
+
+Borrower-safe capacity uses normalized borrower income plus optional other household income, then subtracts existing EMI and current rent:
+
+`safeAvailable = max(0, (income + otherHouseholdIncome) × 40% - existingEmi - rent)`
+
+There is no general-maintenance or household-expense input in the current app. A renter must provide positive rent; an owner explicitly has zero rent.
+
+The loan amount is calculated from EMI headroom using the reducing-balance formula. For LAP, lender capacity is also capped by 50% illustrative LTV. The safe amount is never collateral-capped.
 
 ## Priya
 
-Priya is salaried with ₹1.10L net monthly income, a ₹14k car EMI and a 780 score. She wants ₹8L for a wedding. The challenge gives ₹28k rent. The prefilled run also enters ₹0 for general maintenance, so the current model applies its ₹7,500 minimum maintenance floor instead of allowing zero household maintenance.
+Priya is salaried at ₹1,10,000/month, has ₹14,000 existing EMI, ₹28,000 rent, score 780, and requests ₹8,00,000.
 
-The key affordability rule is:
+- Lender-side estimate: about ₹15.3L
+- Borrower-safe amount: about ₹74.6k
+- Absolute feasible ceiling: about ₹74.6k
+- Safe EMI ceiling: ₹2,000/month
+- Rate: 9.5%–16.5%
+- APR: about 11.1%–19.1%
+- Decision: `BORROW LESS`
 
-`₹1,10,000 × 40% = ₹44,000 safe FOIR ceiling`
-
-`₹44,000 - ₹14,000 existing EMI - ₹28,000 rent - ₹7,500 maintenance floor < ₹0`
-
-So the borrower-safe new EMI is ₹0 and the borrower-safe amount is ₹0. The current verdict is DON'T BORROW. The lender-side estimate is still about ₹15.3L, but Priya should not use that as her personal affordability target.
+The safe calculation is `₹1,10,000 × 40% - ₹14,000 - ₹28,000 = ₹2,000`. Her strong stated score improves the benchmark, but it does not override the rent and existing EMI calculation.
 
 ## Ravi
 
-Ravi is self-employed. He reports ₹40k–₹80k cash income, but his ITR shows ₹4.2L for the year. The app uses the documented figure for normalization, so borrower income becomes ₹35k/month. Operating cash is not added on top.
+Ravi is self-employed with a ₹4,20,000 ITR, a ₹40k–₹80k cash range, ₹18,000 other household income, a ₹45L unencumbered shop, and a ₹15L business request.
 
-The challenge also says his wife earns ₹18k/month. The app captures this as other household income. It is included in the borrower-safe household calculation because Ravi may rely on it for household cash flow, but it is not silently added to lender-side sanction capacity because the app has not established that she is a co-applicant.
+Because documented income exists, normalized borrower income is ₹35,000/month. The cash range is not added on top. His wife's income affects only borrower-safe household capacity, not lender capacity.
 
-His business purpose and ₹45L unencumbered shop route him to a secured business/LAP route. The collateral cap is ₹22.5L, but income affordability is lower. With unknown household expenses, the model uses the ₹7,500 maintenance floor instead of zero. The borrower-safe amount and absolute feasible ceiling are about ₹6.0L while the lender-side estimate is about ₹7.7L.
+- Lender-side estimate: about ₹7.7L
+- Borrower-safe amount: about ₹9.3L
+- Absolute feasible ceiling: about ₹7.7L
+- Collateral cap: ₹22.5L, which is not binding
+- Safe EMI ceiling: ₹17,500/month
+- Rate: 11%–15%
+- APR: about 12.6%–17.1%
+- Decision: `BORROW LESS`
+- Route: secured business/LAP
 
-The ₹15L request is above the absolute feasible ceiling, so the verdict is BORROW LESS. Unknown credit, unknown household expenses and self-employed income make confidence Low.
-
-The unsecured business route is still reachable for a business borrower with no collateral.
+The request exceeds both independent boundaries. Ravi is shown the safer household amount and the stricter lender-side ceiling separately.
 
 ## Anita
 
-Anita has ₹26k–₹30k variable income, ₹1,050 existing EMI, unknown credit, one recent bounce and ₹35k of high-cost app debt. She wants ₹1.5L for an electric scooter.
+Anita has ₹26k–₹30k variable income, ₹1,050 existing EMI, unknown credit, one recent bounce, high-cost app debt, and a ₹1.5L two-wheeler request.
 
-The model normalizes her income to ₹27,400 using the low + 35% of range rule. Unknown expenses use the ₹7,500 maintenance floor. This gives a mathematical borrower-safe amount and absolute feasible ceiling of about ₹0.66L, with a safe EMI ceiling of about ₹2,410/month.
+Her normalized income is `₹26,000 + 35% × ₹4,000 = ₹27,400`.
 
-High-cost debt plus a recent bounce is treated as severe debt risk. The current decision rule therefore returns **DON'T BORROW**, regardless of the stated vehicle purpose. The app does not try to justify new borrowing by inventing a purpose-based exception.
+- Lender-side estimate: about ₹3.5L
+- Borrower-safe amount: about ₹2.7L
+- Absolute feasible ceiling: about ₹2.7L
+- Safe EMI ceiling: about ₹5,461/month
+- Rate: 14%–23%
+- APR: about 16.6%–27.5%
+- Decision: `DON'T BORROW`
 
-The current two-wheeler rate band is 14%–23% after unknown credit and non-salaried adjustments. APR is calculated only on the absolute feasible ceiling, which is about ₹0.66L for this profile.
+The decision is not caused by the vehicle purpose. It is caused by the explicit severe-debt rule: high-cost debt plus a recent bounced EMI. The stress view is separate: income falls 15%; because this is a fixed-rate two-wheeler route, no rate increase is assumed.
 
-## Code and next steps
+## Negotiation Card
 
-The domain rules are in `src/domain/rules.js`, separate from the UI. The main assumptions are at the top of the file, so they can be changed in one place. Domain tests are in `src/domain/rules.test.js`.
+The card shows requested amount, lender-side estimate, borrower-safe amount, fair rate band, APR range, EMI ceiling, route, reasons, confidence, and fee limitations. A quote above the benchmark tells the borrower to ask why; it does not claim a lender is required to match the benchmark.
 
-The affordability rule distinguishes lender and borrower perspectives. Lender-side capacity uses borrower income and lender FOIR. Borrower-safe capacity can include household income, subtracts rent and known household maintenance, and uses a disclosed maintenance floor when expenses are unknown. Unknown is never silently converted to zero.
+## Change scenarios
 
-Household income and lender-side borrower income are kept separate. That makes the Ravi case easier to defend: a spouse's income can improve household affordability without pretending the lender will count it unless co-applicant treatment is established.
-
-The absolute feasible ceiling is the lower of lender-side and borrower-safe capacity. For a secured route, lender-side capacity also respects the collateral LTV cap. The displayed recommended EMI is calculated from the requested amount capped at that ceiling.
-
-The APR estimate uses the **absolute feasible ceiling only**. The same ceiling is used for the processing-fee amount, so the amount, fee and APR stay aligned. The fee is 2% and the APR is illustrative rather than a full lender KFS.
-
-The rate benchmark is kept separate from the borrow/no-borrow decision. Recent bounce and high-cost debt are decision risk flags rather than arbitrary stacked rate penalties.
-
-The stress case drops borrower income by 15% and reduces household expense load by 10%. Only the secured/LAP route applies the configured 2 percentage-point rate stress; the other routes keep the selected fixed-rate assumption. A failed stress case is shown as a resilience check and does not automatically change the base verdict.
-
-If I had more time, I would add better verified expense and income history inputs, more lender-specific product data, and a fuller quote comparison using lender KFS values. I would also improve visual/mobile QA.
-
-I would cut questions that do not change an output. I would also avoid adding more loan products unless the questionnaire has enough information to support them.
-
-For the follow-up, I can change `safeFoir`, `lenderFoir`, `processingFee`, `stressIncomeDrop`, `stressExpenseReduction`, `minimumExpenseFloor`, or `variableIncomeShare` and show which outputs move while the UI remains unchanged.
+Changing `RULES.lenderFoir` changes lender capacity only. Changing `RULES.safeFoir` changes safe capacity and decisions. Changing `RULES.processingFee` changes APR and fee. Changing `RULES.stressIncomeDrop` changes only stress. Changing `RULES.variableIncomeShare` changes variable-income normalization and downstream amounts. None of these require UI changes.

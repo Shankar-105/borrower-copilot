@@ -3,10 +3,10 @@ import { createRoot } from 'react-dom/client'
 import { evaluateBorrower, formatInr, formatLakhs, formatPercent, QUESTION_DEFINITIONS, RULES, SAMPLE_BORROWERS } from './domain/rules'
 import './styles.css'
 
-const blank = { name: '', age: 0, city: '', purpose: 'wedding', loanType: 'not-sure', requestedAmount: 500000, incomeType: 'salaried', monthlyIncome: 60000, incomeLow: 40000, incomeHigh: 60000, documentedAnnualIncome: 0, existingEmi: 0, otherHouseholdIncome: 0, housingType: 'own', monthlyRent: 0, monthlyExpenses: null, creditScore: null, collateralValue: 0, expensesKnown: false, recentBounce: false, highCostDebt: false, tenureMonths: 48 }
+const blank = { name: '', age: 0, city: '', purpose: 'wedding', loanType: 'not-sure', requestedAmount: 500000, incomeType: 'salaried', monthlyIncome: 60000, incomeLow: 40000, incomeHigh: 60000, documentedAnnualIncome: 0, existingEmi: 0, otherHouseholdIncome: 0, housingType: 'own', monthlyRent: 0, creditScore: null, collateralValue: 0, recentBounce: false, highCostDebt: false, tenureMonths: 48 }
 const asValue = (key, value) => {
-  if (['expensesKnown', 'recentBounce', 'highCostDebt'].includes(key)) return value === 'true'
-  if (key === 'creditScore' || key === 'monthlyExpenses') return value === '' ? null : Number(value)
+  if (['recentBounce', 'highCostDebt'].includes(key)) return value === 'true'
+  if (key === 'creditScore') return value === '' ? null : Number(value)
   if (['collateralValue', 'requestedAmount', 'monthlyIncome', 'incomeLow', 'incomeHigh', 'documentedAnnualIncome', 'existingEmi', 'otherHouseholdIncome', 'monthlyRent', 'tenureMonths', 'age'].includes(key)) return value === '' ? 0 : Number(value)
   return value
 }

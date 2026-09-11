@@ -38,7 +38,7 @@ See `three-runs/` for the written run-throughs. Add the screenshots from the act
 
 See [`RULES.md`](./RULES.md) for the current table of thresholds, bands, formulas, reasons and limits.
 
-Important: the rate bands, FOIR, LTV, processing fee, expense floor/proxy and stress values are prototype judgements. They are not promises from any lender and are not presented as universal RBI rules.
+Important: the rate bands, FOIR, LTV, processing fee and stress values are prototype judgements. They are not promises from any lender and are not presented as universal RBI rules.
 
 ## Five-minute walkthrough
 

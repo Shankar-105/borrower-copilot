@@ -1,116 +1,46 @@
-# Ravi — run-through
+# Ravi — current run-through
 
 ## Profile
 
-- Age: 42
-- City: Mysuru
-- Income: self-employed kirana store owner
-- Cash income: ₹40,000–₹80,000/month
-- Documented ITR income: ₹4,20,000/year
-- Existing EMI: ₹0
-- Credit score: Not known
-- Purpose: second stock line and delivery vehicle
-- Loan type: business loan
-- Requested amount: ₹15,00,000
-- Tenure: 60 months
-- Recent bounce: No
-- High-cost debt above 24%: No
-- Wife's income: ₹18,000/month
-- Household expenses: Not known from the challenge profile
-- Unencumbered shop value: ₹45,00,000
-
-The app uses the ITR income for lender-side capacity because it is documented. Ravi's wife's ₹18k income is captured separately as other household income. It helps the borrower-safe household calculation, but it is not silently added to what a lender may sanction because the app has not established that she is a co-applicant.
+Ravi is 42, a self-employed kirana owner in Mysuru. Cash income is ₹40,000–₹80,000/month, ITR income is ₹4,20,000/year, the shop is worth ₹45,00,000 and unencumbered, his wife earns ₹18,000/month, he has no formal borrowing history or known score, and he requests ₹15,00,000 for stock and a delivery vehicle.
 
 ## Questions shown
 
 ### Must answer
 
-1. What are you borrowing for? — Business or stock
-2. What loan type are you considering? — Business loan
-3. How much do you want to borrow? — ₹15,00,000
-4. How does your income arrive? — Self-employed
-5. Lower monthly income — ₹40,000
-6. Higher monthly income — ₹80,000
-7. Existing monthly EMIs — ₹0
-8. Do you own your home or rent? — Own House
-9. Do you know your monthly household expenses? — Not yet
-10. Your age — 42
+1. Purpose: Business or stock
+2. Loan type: Business loan
+3. Requested amount: ₹15,00,000
+4. Income type: Self-employed
+5. Lower income: ₹40,000
+6. Higher income: ₹80,000
+7. Existing EMI: ₹0
+8. Other household income: optional additional question, ₹18,000
+9. Housing: Own House
+10. Age: 42
 
-### Additional questions
+### Additional
 
-11. Annual documented income (ITR) — ₹4,20,000
-12. Other household income you expect to rely on — ₹18,000
-13. Credit score, if known — Not known
-14. Unencumbered property or collateral value — ₹45,00,000
-15. Any EMI bounced in the last 6 months? — No
-16. Any app or short-term debt above 24%? — No
-17. Preferred tenure — 5 years
+Documented annual ITR income ₹4,20,000, credit score unknown, collateral ₹45,00,000, bounce No, high-cost debt No, preferred tenure 60 months.
 
-The collateral question appears because Ravi is self-employed. The current form uses the challenge's collateral to route him to the secured business/LAP path.
+There is no household-expense or maintenance question.
 
-## O1 — Should I borrow?
+## Outputs
 
-**BORROW LESS**
+- Normalized borrower income: **₹35,000/month** from ITR income
+- Lender-side estimate: **about ₹7.7L**
+- Borrower-safe amount: **about ₹9.3L**
+- Absolute feasible ceiling: **about ₹7.7L**
+- Collateral cap: **₹22.5L**, not binding
+- Safe EMI ceiling: **₹17,500/month**
+- Rate: **11%–15%**
+- APR: **about 12.6%–17.1%**
+- Route: Secured business/LAP
+- Decision: **BORROW LESS**
+- Confidence: Low
 
-The ₹15L request is above the absolute feasible ceiling. Ravi's property establishes a secured route, while the wife's income improves borrower-safe household capacity. Because household expenses are unknown, the model uses a disclosed ₹7,500 maintenance floor rather than treating missing expenses as ₹0.
-
-Confidence: **Low** because the credit score and household expenses are not known, and the income is self-employed.
-
-## O2 — How much?
-
-- Normalized borrower income: **₹35,000/month** from the ₹4.2L documented annual income
-- Estimated lender-side capacity: **about ₹7.7L**
-- Borrower-safe household amount: **about ₹6.0L**
-- Collateral cap at 50% LTV: **₹22.5L**
-- Absolute feasible ceiling: **about ₹6.0L**
-- Practical amount to plan around: **about ₹6.0L**
-- Safe EMI ceiling: **₹13,700/month**
-
-The borrower-safe amount uses Ravi's normalized ₹35k borrower income plus his wife's ₹18k household income, then subtracts the ₹7,500 maintenance floor. The lender-side number uses Ravi's ₹35k normalized income only.
-
-The absolute feasible ceiling is the lower of lender-side and borrower-safe capacity, so the card uses about ₹6.0L. The ₹22.5L collateral cap is not the recommendation because income affordability is lower.
-
-## O3 — What rate?
-
-- Route: **Loan against property / secured business loan**
-- Rate band: **11%–15%**
-- All-in APR estimate: **about 12.6%–17.1%**
-- Prototype processing fee: **2%**, about ₹12,042 on the absolute feasible ceiling
-
-The secured route starts from the 10%–14% prototype band. Unknown credit does not add a separate penalty on this secured route in the current code, while non-salaried income adds 1 percentage point. The resulting 11%–15% band is illustrative.
-
-APR is calculated only on the absolute feasible ceiling, so the fee and APR are aligned to the same principal used for the conservative maximum planning amount.
-
-## O4 — What EMI?
-
-- Borrower-safe EMI ceiling: **about ₹13,700/month**
-- Absolute feasible ceiling: **about ₹6.0L**
-- Practical amount to plan around: **about ₹6.0L**
-- Tenure used: **60 months**
-- Tenure trade-off uses the practical amount at the 13% midpoint.
-- 48 months: about **₹16.2k EMI**, about **₹1.7L total interest**
-- 60 months: about **₹13.7k EMI**, about **₹2.2L total interest** — selected
-- 72 months: about **₹12.1k EMI**, about **₹2.7L total interest**
-- Stress income after a 15% drop: **₹29,750/month**
-- Stress household income including wife's income: **₹47,750/month**
-- Stressed safe EMI room: **about ₹12,350/month** after the 10% expense reduction
-- Requested ₹15L EMI at the stressed rate of 17%: **about ₹37.3k/month**
-- Stress result: **Buffer breaks**
-
-The trade-off uses the same absolute feasible principal that the card recommends. The safe EMI ceiling is still shown separately because it is the household's monthly limit.
+The lender calculation uses only Ravi's normalized ₹35,000 income. The safe household calculation uses ₹35,000 plus the optional ₹18,000 household income. The request exceeds both capacity boundaries, so the absolute feasible ceiling is the lower lender-side estimate.
 
 ## Negotiation Card
 
-The card should show:
-
-- Recommended / practical amount: **about ₹6.0L**
-- Lender-side estimate: **about ₹7.7L**
-- Borrower-safe amount: **about ₹6.0L**
-- Absolute feasible ceiling: **about ₹6.0L**
-- Rate: **11%–15%**
-- APR including fee: **about 12.6%–17.1%**
-- EMI ceiling: **about ₹13,700/month**
-- Route: **Loan against property / secured business loan**
-- Verdict reason: the ₹15L request is above the absolute feasible ceiling after borrower-safe household affordability
-
-I will add the result/card screenshots in this folder.
+The card tells Ravi: “Your property supports a secured route and a collateral cap of ₹22.5L, but the current lender-side estimate is about ₹7.7L and the borrower-safe household amount is about ₹9.3L. Please explain any quote above the illustrative 11%–15% benchmark.”
