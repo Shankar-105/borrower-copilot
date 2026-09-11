@@ -2,9 +2,11 @@
 
 ## Product
 
-Borrower Copilot is a local borrower self-assessment for the four Lokta outputs: borrow, don't borrow, borrow less; lender-side versus borrower-safe amount; fair rate and APR range; and EMI ceiling with stress. It has no backend, login, bureau pull, or stored personal data.
+Borrower Copilot is a local borrower self-assessment for the Lokta outputs: borrow, don't borrow or borrow less; lender-side versus borrower-safe amount; fair rate and illustrative APR; and EMI with a stress check. It has no backend, login, bureau pull or stored personal data.
 
-The flow is adaptive. Must questions collect purpose, loan type, requested amount, income type, income, existing EMI, household expenses excluding rent and EMIs, housing, age, and rent when the borrower selects renting. Additional questions include ITR income, optional other household income, credit score, collateral, repayment risk, and tenure. Blank must-answer numeric fields remain unknown and block the assessment; an explicit zero existing EMI is valid.
+The form is adaptive. Must-answer questions are purpose, loan type, requested amount, income type, the matching income fields, existing EMI, housing, rent when renting, age and preferred tenure. Preferred tenure is required because EMI and APR depend on it. Rent can be ₹0, but a renter must explicitly answer the field.
+
+Additional questions adapt to the profile. Self-employed borrowers get documented ITR income and collateral. Credit status separates known score, unknown score and no credit history; the score input appears only for a known score. Other household income is optional. Recent bounce and high-cost debt are risk questions.
 
 ## Core affordability
 
@@ -12,79 +14,104 @@ Lender-side capacity uses only borrower normalized income and existing EMI:
 
 `lenderAvailable = max(0, income × 50% - existingEmi)`
 
-Borrower-safe capacity uses normalized borrower income plus optional other household income, then subtracts existing EMI, current rent, and monthly household expenses:
+Borrower-safe capacity uses normalized borrower income plus optional other household income, then subtracts existing EMI and rent:
 
-`safeAvailable = max(0, (income + otherHouseholdIncome) × 40% - existingEmi - rent - householdExpenses)`
+`safeAvailable = max(0, (income + otherHouseholdIncome) × 40% - existingEmi - rent)`
 
-Household expenses are entered excluding rent and existing EMIs. A renter must provide positive rent; an owner explicitly has zero rent. The three prefilled scenarios use illustrative expense assumptions because the challenge brief does not provide those values.
+There is no separate household-maintenance-expense input.
 
-The loan amount is calculated from EMI headroom using the reducing-balance formula. For LAP, lender capacity is also capped by a 50% illustrative LTV. The safe amount is never collateral-capped.
+The loan amount is calculated from EMI headroom using the reducing-balance formula. For LAP, lender capacity is also capped by 50% illustrative LTV.
 
-When the verdict is `DON'T BORROW`, the live preview and Negotiation Card show **₹0 as the amount to borrow now**. The positive borrower-safe figure remains visible as a mathematical capacity check only.
+When the verdict is `DON'T BORROW`, the live preview and Negotiation Card show **₹0 as the amount to borrow now**. A positive borrower-safe number is a mathematical capacity check only.
 
 ## Priya
 
-Priya is salaried at ₹1,10,000/month, has ₹14,000 existing EMI, ₹28,000 rent, ₹10,000 illustrative household expenses, score 780, and requests ₹8,00,000.
+Priya is 29, salaried in Bengaluru, earns ₹1,10,000 net monthly, has a ₹14,000 car EMI, rents for ₹28,000/month, has a 780 score, and requests ₹8,00,000 for a wedding personal loan over 48 months.
 
-- Lender-side estimate: about ₹15.3L
-- Borrower-safe amount: ₹0
-- Absolute feasible ceiling: ₹0
-- Safe EMI ceiling: ₹0/month
-- Rate: 9.5%–16.5%
-- APR: Not available because there is no feasible borrowing principal
-- Decision: `DON'T BORROW`
+### Questions shown: 15 total
 
-The safe calculation is `₹1,10,000 × 40% - ₹14,000 - ₹28,000 - ₹10,000 = -₹8,000`, floored at zero. Her strong stated score improves the benchmark, but it does not override household outgoings. The stress case fails too: requested EMI is about ₹22,878 against ₹0 of stressed room.
+**Must answer (10):** purpose, loan type, requested amount, salaried income type, monthly income, existing EMI, housing type, rent, age, preferred tenure.
+
+**Additional (5):** other household income, credit status = known, credit score = 780, recent bounce, high-cost debt.
+
+ITR and collateral are skipped.
+
+### Outputs
+
+- Normalized income: **₹1,10,000/month**
+- Lender-side estimate: **about ₹15.3L**
+- Borrower-safe amount: **about ₹74.6k**
+- Absolute feasible ceiling: **about ₹74.6k**
+- Planned EMI at the ceiling: **₹2,000/month**
+- Rate: **9.5%–16.5%**
+- APR: **about 11.1%–19.1%**
+- Decision: **BORROW LESS**
+- Confidence: High
+
+Safe monthly room is `₹1,10,000 × 40% - ₹14,000 - ₹28,000 = ₹2,000`. The 15% income stress leaves ₹0 safe room, so the planned EMI does not survive the stress check. Stress is informational and does not change the base verdict.
 
 ## Ravi
 
-Ravi is self-employed with a ₹4,20,000 ITR, a ₹40k–₹80k cash range, ₹18,000 other household income, ₹8,000 illustrative household expenses, a ₹45L unencumbered shop, and a ₹15L business request.
+Ravi is 42, self-employed in Mysuru. Cash income is ₹40,000–₹80,000/month, ITR income is ₹4,20,000/year, the shop is worth ₹45L and unencumbered, his wife earns ₹18,000/month, credit is unknown, and he requests ₹15L for business use over 60 months.
 
-Because documented income exists, normalized borrower income is ₹35,000/month. The cash range is not added on top. His wife's income affects only borrower-safe household capacity, not lender capacity.
+### Questions shown: 16 total
 
-- Lender-side estimate: about ₹7.7L
-- Borrower-safe amount: about ₹5.8L
-- Absolute feasible ceiling: about ₹5.8L
-- Collateral cap: ₹22.5L, not binding
-- Safe EMI ceiling: ₹13,200/month
-- Rate: 11%–15%
-- APR: about 12.6%–17.1%
-- Decision: `BORROW LESS`
+**Must answer (10):** purpose, loan type, requested amount, self-employed income type, lower income, higher income, existing EMI, housing type, age, preferred tenure.
+
+**Additional (6):** ITR income, other household income, credit status = unknown, collateral, recent bounce, high-cost debt.
+
+### Outputs
+
+- Normalized borrower income: **₹35,000/month** from ITR income
+- Lender-side estimate: **about ₹7.7L**
+- Borrower-safe amount: **about ₹9.3L**
+- Absolute feasible ceiling: **about ₹7.7L**
+- Collateral cap: **₹22.5L**, not binding
+- Planned EMI at the ceiling: **₹17,500/month**
+- Rate: **11%–15%**
+- APR: **about 12.6%–17.1%**
 - Route: secured business/LAP
+- Decision: **BORROW LESS**
 - Confidence: Low
 
-The request exceeds both capacity boundaries. The stress case also fails: requested EMI is about ₹37,279 against ₹11,100 of stressed room, so Ravi should change the amount or tenure before accepting an offer.
+The lender calculation uses only Ravi's normalized ₹35,000 income. His wife's ₹18,000 is used only for borrower-safe capacity. Stress is shown separately and does not trigger the base verdict.
 
 ## Anita
 
-Anita has ₹26k–₹30k variable income, ₹1,050 existing EMI, ₹8,000 illustrative household expenses, unknown credit, one recent bounce, high-cost app debt, and a ₹1.5L two-wheeler request.
+Anita is 35 in Hubballi, earns ₹26,000–₹30,000 from variable work, has a ₹1,050 existing EMI, unknown credit, one recent bounce, high-cost app debt, and requests ₹1.5L for an electric scooter over 36 months.
 
-Her normalized income is `₹26,000 + 35% × ₹4,000 = ₹27,400`.
+### Questions shown: 14 total
 
-- Lender-side estimate: about ₹3.5L
-- Borrower-safe amount: about ₹52k
-- Absolute feasible ceiling: about ₹52k
-- Mathematical safe EMI ceiling: about ₹1,910/month
-- Rate: 14%–23%
-- APR: about 16.6%–27.5%
-- Decision: `DON'T BORROW`
+**Must answer (10):** purpose, loan type, requested amount, variable income type, lower income, higher income, existing EMI, housing type, age, preferred tenure.
+
+**Additional (4):** other household income, credit status = unknown, recent bounce, high-cost debt.
+
+ITR, collateral and credit-score input are skipped.
+
+### Outputs
+
+- Normalized income: **₹27,400/month** using low + 35% of range
+- Lender-side estimate: **about ₹3.3L**
+- Borrower-safe amount: **about ₹2.6L**
+- Absolute feasible ceiling: **about ₹2.6L**
+- Mathematical safe EMI ceiling: **about ₹9,910/month**
+- Rate: **17.5%–26.5%**
+- APR: **about 20.7%–31.9%**
+- Route: Two-wheeler loan
+- Decision: **DON'T BORROW**
 - Amount to borrow now: **₹0**
 - Confidence: Low
 
-The decision comes from the explicit severe-debt rule: high-cost debt plus a recent bounced EMI. The vehicle purpose does not override that guard. The stress case fails too: requested EMI is about ₹5,806 against ₹266 of stressed room.
+The stop decision comes from high-cost debt plus a recent bounced EMI. The risk flags also raise the illustrative rate benchmark. The positive safe amount is only a mathematical capacity check.
 
 ## Negotiation Card
 
-The card shows requested amount, lender-side estimate, borrower-safe amount, fair rate band, APR range, EMI ceiling, route, reasons, confidence, and fee limitations. For `DON'T BORROW`, its primary amount and EMI-to-carry-now fields are both ₹0, while the mathematical borrower-safe capacity remains visible separately. It supports comparing both nominal rate and lender APR; APR must be compared using the same principal, tenure, and all-in fee basis.
+The card shows requested amount, lender-side estimate, borrower-safe amount, fair rate, APR including the illustrative processing fee, EMI, route, reasons and confidence. For `DON'T BORROW`, the primary amount and EMI-to-carry-now fields are both ₹0. It also lets the borrower compare a lender's nominal rate and APR against the prototype benchmark.
 
-## Change scenarios
+## What changes live
 
-Changing `RULES.lenderFoir` changes lender capacity only. Changing `RULES.safeFoir` or household expenses changes safe capacity and decisions. Changing `RULES.processingFee` changes APR and fee. Changing `RULES.stressIncomeDrop` changes stress. Changing `RULES.variableIncomeShare` changes variable-income normalization and downstream amounts.
+Changing income type changes which income fields are visible. Changing housing to rent reveals the rent field; ₹0 is valid when explicitly entered. Choosing known credit reveals the score field, while unknown and no-credit states reject a supplied score. Changing tenure changes EMI, APR and the tenure trade-off. Other household income changes borrower-safe capacity but never lender-side capacity. Risk flags change the rate benchmark and severe debt flags can change the base verdict.
 
-## What I would build next
+## Submission notes
 
-I would add lender-quote capture for principal, nominal rate, processing fee, insurance, and other charges so the borrower can compare a real KFS against the same principal and tenure. I would also add purpose-specific cash-flow questions for productive borrowing, a co-applicant distinction, and a printable or downloadable card with a clear stress warning.
-
-## What I would cut
-
-I would cut the impression that a single prototype rate band is a market quote. The band should remain a negotiation benchmark, labelled as judgement, without suggesting that a lender must match it.
+The domain logic is intentionally small and deterministic. `RULES.md` documents the current thresholds, adaptive questions, formulas, validation and limitations, and the three run-throughs mirror the current sample profiles and UI behaviour.
