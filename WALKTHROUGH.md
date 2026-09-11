@@ -20,6 +20,8 @@ There is no general-maintenance or household-expense input in the current app. A
 
 The loan amount is calculated from EMI headroom using the reducing-balance formula. For LAP, lender capacity is also capped by 50% illustrative LTV. The safe amount is never collateral-capped.
 
+When the verdict is `DON'T BORROW`, the live preview and Negotiation Card show **₹0 as the amount to borrow now**. The positive borrower-safe figure remains visible as a mathematical capacity check only.
+
 ## Priya
 
 Priya is salaried at ₹1,10,000/month, has ₹14,000 existing EMI, ₹28,000 rent, score 780, and requests ₹8,00,000.
@@ -61,16 +63,17 @@ Her normalized income is `₹26,000 + 35% × ₹4,000 = ₹27,400`.
 - Lender-side estimate: about ₹3.5L
 - Borrower-safe amount: about ₹2.7L
 - Absolute feasible ceiling: about ₹2.7L
-- Safe EMI ceiling: about ₹5,461/month
+- Mathematical safe EMI ceiling: about ₹5,461/month
 - Rate: 14%–23%
 - APR: about 16.6%–27.5%
 - Decision: `DON'T BORROW`
+- Amount to borrow now: **₹0**
 
-The decision is not caused by the vehicle purpose. It is caused by the explicit severe-debt rule: high-cost debt plus a recent bounced EMI. The stress view is separate: income falls 15%; because this is a fixed-rate two-wheeler route, no rate increase is assumed.
+The decision is not caused by the vehicle purpose. It is caused by the explicit severe-debt rule: high-cost debt plus a recent bounced EMI. The positive safe amount and EMI are mathematical capacity checks only; the current borrowing amount shown to Anita is ₹0. The stress view is separate: income falls 15%; because this is a fixed-rate two-wheeler route, no rate increase is assumed.
 
 ## Negotiation Card
 
-The card shows requested amount, lender-side estimate, borrower-safe amount, fair rate band, APR range, EMI ceiling, route, reasons, confidence, and fee limitations. A quote above the benchmark tells the borrower to ask why; it does not claim a lender is required to match the benchmark.
+The card shows requested amount, lender-side estimate, borrower-safe amount, fair rate band, APR range, EMI ceiling, route, reasons, confidence, and fee limitations. For `DON'T BORROW`, its primary amount and EMI-to-carry-now fields are both ₹0, while the mathematical borrower-safe capacity remains visible separately. A quote above the benchmark tells the borrower to ask why; it does not claim a lender is required to match the benchmark.
 
 ## Change scenarios
 
