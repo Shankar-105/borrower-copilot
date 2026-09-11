@@ -170,9 +170,7 @@ function rateBand(profile, route) {
   const [baseMin, baseMax] = RATE_BASE[route.key]
   const credit = creditAdjustment(profile, route)
   
-  // Logic: Confidence widens the range. 
-  // High confidence = tight band (base range). 
-  // Low confidence = widen the band by expanding the max.
+  // Logic: Confidence widens the range :). 
   const spreadModifier = credit.known ? 0 : (credit.spread || 2)
   
   let min = baseMin + credit.minPoints

@@ -1,117 +1,66 @@
-# Five-minute walkthrough
+# Walkthrough: Borrower Copilot
 
-## Product
+## Project Overview
+The Borrower Copilot is a self-assessment tool designed for Indian borrowers. The main goal is to bridge the information gap between a borrower and a lender. Usually, borrowers walk into a bank blind and just accept whatever sanction letter they get. This app gives them the numbers first—should they borrow, how much is safe, and what rate is fair—so they can actually negotiate.
 
-Borrower Copilot is a local borrower self-assessment for the Lokta outputs: borrow, don't borrow or borrow less; lender-side versus borrower-safe amount; fair rate and illustrative APR; and EMI with a stress check. It has no backend, login, bureau pull or stored personal data.
+Everything is built locally. There is no backend, no database, and no API calls. All calculations happen in the browser, meaning the borrower's data never leaves their device.
 
-The form is adaptive. Must-answer questions are purpose, loan type, requested amount, income type, the matching income fields, existing EMI, housing, rent when renting, age and preferred tenure. Preferred tenure is required because EMI and APR depend on it. Rent can be ₹0, but a renter must explicitly answer the field.
+## The Core Engine (The "Brains")
+One of the main engineering decisions here was to completely separate the domain logic from the React UI. All the math and rules live in `src/domain/rules.js`. This ensures that the logic is deterministic—given the same inputs, you always get the same output—and it allows us to write rigorous unit tests in `rules.test.js` without having to simulate UI clicks.
 
-Additional questions adapt to the profile. Self-employed borrowers get documented ITR income and collateral. Credit status separates known score, unknown score and no credit history; the score input appears only for a known score. Other household income is optional. Recent bounce and high-cost debt are risk questions.
+**The sequential execution flow inside the engine:**
 
-## Core affordability
+1. **Input Cleaning & Normalization:** 
+   The engine first handles the "messiness" of Indian income. 
+   - For salaried employees, it's simple net monthly income.
+   - For self-employed or informal workers, it's trickier. We use the documented ITR if available ($\text{Annual ITR} \div 12$). If not, we use a conservative formula: $\text{Low Income} + 35\% \text{ of the range}$. This is crucial because it stops one or two "peak months" from making the borrower look richer than they are, which would lead to over-borrowing.
 
-Lender-side capacity uses only borrower normalized income and existing EMI:
+2. **The Two-Track Affordability Analysis:**
+   The app calculates two different ceilings because a bank's logic is different from a borrower's safety logic.
+   - **Lender-Side Track:** This simulates a bank's FOIR (Fixed Obligation to Income Ratio) of $50\%$. It calculates $\text{Income} \times 0.5$ and subtracts existing EMIs. This is what the bank is *likely* to sanction.
+   - **Borrower-Safe Track:** This is the "conservative" view. It uses a $40\%$ FOIR and adds optional other household income (like a spouse's earnings) but then subtracts both existing EMIs **and** monthly rent. This tells the borrower what they can actually carry without sacrificing their quality of life.
 
-`lenderAvailable = max(0, income × 50% - existingEmi)`
+3. **Product Routing:**
+   Based on the borrower's purpose and available collateral, the engine routes them to a specific product:
+   - If there's a business purpose and they have property, it routes to **LAP (Loan Against Property)**.
+   - If it's for a vehicle, it goes to a **Two-Wheeler Loan**.
+   - Otherwise, it defaults to a **Personal Loan**.
+   Routing is key because a secured loan (LAP) gets much better rates than an unsecured personal loan.
 
-Borrower-safe capacity uses normalized borrower income plus optional other household income, then subtracts existing EMI and rent:
+4. **Dynamic Rate Benchmarking:**
+   Instead of a single number, we provide a rate band.
+   - It starts with a base range for the product (e.g., $11\%-18\%$ for Personal).
+   - **Credit Modifiers:** A score $\ge 750$ shifts the band down. A weak score or "No Credit" shifts it up.
+   - **Confidence Widening:** If credit is "Unknown," we don't just shift the rate up; we **widen** the band. This reflects the uncertainty—the bank might give a great rate or a terrible one, and the borrower needs to be prepared for both.
+   - **Risk Penalties:** Recent payment bounces or high-cost "app loans" add penalty points (e.g., $+1.5\%$ to $+2\%$) to the benchmark.
 
-`safeAvailable = max(0, (income + otherHouseholdIncome) × 40% - existingEmi - rent)`
+5. **Calculating the Absolute Ceiling:**
+   The "Absolute Feasible Ceiling" is the $\min(\text{Lender Amount}, \text{Safe Amount})$. For LAP loans, we also apply a $50\%$ LTV (Loan-to-Value) cap on the property. This prevents the borrower from borrowing more than the property can realistically support.
 
-There is no separate household-maintenance-expense input.
+6. **The Final Verdict:**
+   The engine then makes a decision:
+   - `DON'T BORROW`: If safe room is $\le 0$, or if they have both a recent bounce AND high-cost debt, or if their existing EMIs are $> 60\%$ of income (the "Debt Trap" threshold).
+   - `BORROW LESS`: If the requested amount is higher than the Absolute Feasible Ceiling.
+   - `BORROW`: If the request fits within both the lender and safe limits.
 
-The loan amount is calculated from EMI headroom using the reducing-balance formula. For LAP, lender capacity is also capped by 50% illustrative LTV.
+## Case Study Analysis
 
-When the verdict is `DON'T BORROW`, the live preview and Negotiation Card show **₹0 as the amount to borrow now**. A positive borrower-safe number is a mathematical capacity check only.
+### Priya (The Salaried Professional)
+Priya earns ₹1.1L/month but has a car loan (₹14k) and high rent (₹28k). Despite a great credit score (780), her "Safe Room" is tiny (~₹2k). Because her basic living costs are so high, the app tells her to **BORROW LESS**. It teaches her that a high credit score doesn't mean you can afford a high EMI.
 
-## Priya
+### Ravi (The Self-Employed Owner)
+Ravi has a ₹45L shop, but his documented income is only ₹35k/month. While the property (collateral) could theoretically back a ₹22.5L loan, his income can't support the monthly payments for the ₹15L he wants. The app identifies that the lender will cap him based on income, not property, resulting in a **BORROW LESS** verdict.
 
-Priya is 29, salaried in Bengaluru, earns ₹1,10,000 net monthly, has a ₹14,000 car EMI, rents for ₹28,000/month, has a 780 score, and requests ₹8,00,000 for a wedding personal loan over 48 months.
+### Anita (The Informal Worker)
+Anita earns ~₹27.4k/month and has a few app loans. She has a recent payment bounce and existing high-cost debt. Even though she has some mathematical room for a small loan, the engine triggers the "Debt Trap" risk. The verdict is **DON'T BORROW**, and the amount is set to ₹0 to prevent further financial distress.
 
-### Questions shown: 15 total
+## The Negotiation Card & Final Outputs
+The final result is a **Negotiation Card**. It doesn't just give a number; it gives a strategy.
+- **APR Calculation:** We calculate the all-in APR using a bisection method, assuming a $2\%$ processing fee. This is critical because lenders often quote "nominal rates" and hide fees.
+- **Tenure Trade-off:** The app shows how changing the tenure (e.g., from 3 to 5 years) affects the EMI and the total interest paid.
+- **Stress Test:** We simulate a $15\%$ income drop. If the EMI no longer fits in the safe room, the app warns the borrower that the loan is "unstable."
 
-**Must answer (10):** purpose, loan type, requested amount, salaried income type, monthly income, existing EMI, housing type, rent, age, preferred tenure.
-
-**Additional (5):** other household income, credit status = known, credit score = 780, recent bounce, high-cost debt.
-
-ITR and collateral are skipped.
-
-### Outputs
-
-- Normalized income: **₹1,10,000/month**
-- Lender-side estimate: **about ₹15.3L**
-- Borrower-safe amount: **about ₹74.6k**
-- Absolute feasible ceiling: **about ₹74.6k**
-- Planned EMI at the ceiling: **₹2,000/month**
-- Rate: **9.5%–16.5%**
-- APR: **about 11.1%–19.1%**
-- Decision: **BORROW LESS**
-- Confidence: High
-
-Safe monthly room is `₹1,10,000 × 40% - ₹14,000 - ₹28,000 = ₹2,000`. The 15% income stress leaves ₹0 safe room, so the planned EMI does not survive the stress check. Stress is informational and does not change the base verdict.
-
-## Ravi
-
-Ravi is 42, self-employed in Mysuru. Cash income is ₹40,000–₹80,000/month, ITR income is ₹4,20,000/year, the shop is worth ₹45L and unencumbered, his wife earns ₹18,000/month, credit is unknown, and he requests ₹15L for business use over 60 months.
-
-### Questions shown: 16 total
-
-**Must answer (10):** purpose, loan type, requested amount, self-employed income type, lower income, higher income, existing EMI, housing type, age, preferred tenure.
-
-**Additional (6):** ITR income, other household income, credit status = unknown, collateral, recent bounce, high-cost debt.
-
-### Outputs
-
-- Normalized borrower income: **₹35,000/month** from ITR income
-- Lender-side estimate: **about ₹7.7L**
-- Borrower-safe amount: **about ₹9.3L**
-- Absolute feasible ceiling: **about ₹7.7L**
-- Collateral cap: **₹22.5L**, not binding
-- Planned EMI at the ceiling: **₹17,500/month**
-- Rate: **11%–15%**
-- APR: **about 12.6%–17.1%**
-- Route: secured business/LAP
-- Decision: **BORROW LESS**
-- Confidence: Low
-
-The lender calculation uses only Ravi's normalized ₹35,000 income. His wife's ₹18,000 is used only for borrower-safe capacity. Stress is shown separately and does not trigger the base verdict.
-
-## Anita
-
-Anita is 35 in Hubballi, earns ₹26,000–₹30,000 from variable work, has a combined ₹3,500 monthly EMI across three app loans, unknown credit, one recent bounce, high-cost app debt, and requests ₹1.5L for an electric scooter over 36 months.
-
-### Questions shown: 14 total
-
-**Must answer (10):** purpose, loan type, requested amount, variable income type, lower income, higher income, existing EMI, housing type, age, preferred tenure.
-
-**Additional (4):** other household income, credit status = unknown, recent bounce, high-cost debt.
-
-ITR, collateral and credit-score input are skipped.
-
-### Outputs
-
-- Normalized income: **₹27,400/month** using low + 35% of range
-- Lender-side estimate: **about ₹2.7L**
-- Borrower-safe amount: **about ₹2.0L**
-- Absolute feasible ceiling: **about ₹2.0L**
-- Mathematical safe EMI ceiling: **about ₹5,729/month**
-- Rate: **17.5%–26.5%**
-- APR: **about 20.7%–31.9%**
-- Route: Two-wheeler loan
-- Decision: **DON'T BORROW**
-- Amount to borrow now: **₹0**
-- Confidence: Low
-
-The stop decision comes from high-cost debt plus a recent bounced EMI. The risk flags also raise the illustrative rate benchmark. The positive safe amount is only a mathematical capacity check.
-
-## Negotiation Card
-
-The card shows requested amount, lender-side estimate, borrower-safe amount, fair rate, APR including the illustrative processing fee, EMI, route, reasons and confidence. For `DON'T BORROW`, the primary amount and EMI-to-carry-now fields are both ₹0. It also lets the borrower compare a lender's nominal rate and APR against the prototype benchmark.
-
-## What changes live
-
-Changing income type changes which income fields are visible. Changing housing to rent reveals the rent field; ₹0 is valid when explicitly entered. Choosing known credit reveals the score field, while unknown and no-credit states reject a supplied score. Changing tenure changes EMI, APR and the tenure trade-off. Other household income changes borrower-safe capacity but never lender-side capacity. Risk flags change the rate benchmark and severe debt flags can change the base verdict.
-
-## Submission notes
-
-The domain logic is intentionally small and deterministic. `RULES.md` documents the current thresholds, adaptive questions, formulas, validation and limitations, and the three run-throughs mirror the current sample profiles and UI behaviour.
+## Summary of Engineering Choices
+- **Separation of Concerns:** UI (React) $\leftrightarrow$ Logic (`rules.js`).
+- **Conservative Defaults:** "Unknown" is never treated as zero; it's treated as a risk that widens the rate band.
+- **Transparency:** Every number (like the ₹22k ceiling) is accompanied by a "Why" sentence so the borrower can explain their position to the lender.
